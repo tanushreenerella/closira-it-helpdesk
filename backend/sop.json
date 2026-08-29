@@ -1,0 +1,104 @@
+{
+  "organization": {
+    "name": "Closira IT Helpdesk",
+    "tagline": "Employee technology support for everyday IT issues.",
+    "support_hours": "Monday to Friday, 8:00 AM to 6:00 PM local time",
+    "support_channels": ["IT Helpdesk portal", "AI Support Assistant", "Human IT Support"]
+  },
+  "supported_issues": [
+    "Account and password issues",
+    "Wi-Fi and network connectivity",
+    "VPN connectivity",
+    "Managed device problems",
+    "Email issues",
+    "Approved software and access requests"
+  ],
+  "troubleshooting_playbooks": [
+    {
+      "issue": "Account and password",
+      "steps": [
+        "Confirm the employee is using their company account.",
+        "Ask them to use the approved password reset process.",
+        "Check whether the account is locked after repeated sign-in attempts.",
+        "Escalate if the reset fails, multi-factor authentication cannot be completed, or account compromise is suspected."
+      ]
+    },
+    {
+      "issue": "Wi-Fi and network",
+      "steps": [
+        "Confirm whether the issue affects Wi-Fi, wired network, or both.",
+        "Ask the employee to verify airplane mode is off and reconnect to the approved corporate network.",
+        "Restart the device once and check whether other sites or services are reachable.",
+        "Escalate if multiple employees or locations are affected, or the device cannot obtain a network connection."
+      ]
+    },
+    {
+      "issue": "VPN",
+      "steps": [
+        "Confirm the employee has a working internet connection before connecting to VPN.",
+        "Verify the approved VPN client is being used and the employee is signing in with their company account.",
+        "Ask for the exact error message and whether multi-factor authentication succeeds.",
+        "Escalate if the VPN client fails after a restart, access is denied, or a service outage is suspected."
+      ]
+    },
+    {
+      "issue": "Device",
+      "steps": [
+        "Collect the device type, operating system, asset tag if available, and exact symptom.",
+        "Ask the employee to save work and restart the device when it is safe to do so.",
+        "Check cables, power, battery, and connected peripherals for physical issues.",
+        "Escalate for a lost or stolen device, signs of malware, physical damage, repeated crashes, or a device that will not power on."
+      ]
+    },
+    {
+      "issue": "Email",
+      "steps": [
+        "Confirm whether the problem is sending, receiving, signing in, or accessing a shared mailbox.",
+        "Check the internet connection and whether the issue occurs in the approved web or desktop mail client.",
+        "Ask for any visible error message without requesting passwords or sensitive email content.",
+        "Escalate for suspected phishing, account compromise, widespread mail delivery failures, or access to restricted mailboxes."
+      ]
+    },
+    {
+      "issue": "Software and access",
+      "steps": [
+        "Confirm the application or resource name and the access needed.",
+        "Check whether the software is approved and whether the employee is using a managed device.",
+        "Ask for the exact error message and business impact.",
+        "Escalate access changes requiring manager or system-owner approval, unapproved software, licensing questions, or admin permissions."
+      ]
+    }
+  ],
+  "faqs": [
+    {
+      "question": "How do I reset my password?",
+      "answer": "Use the approved company password reset process. If the reset does not work or your account is locked, contact Human IT Support."
+    },
+    {
+      "question": "What should I do if Wi-Fi is not working?",
+      "answer": "Check that airplane mode is off, reconnect to the approved corporate network, and restart your device once. Report whether other employees are affected."
+    },
+    {
+      "question": "Why will my VPN not connect?",
+      "answer": "Confirm your internet connection works first, then use the approved VPN client and company account. Note the exact error message if it still fails."
+    },
+    {
+      "question": "How do I request software or access?",
+      "answer": "Provide the application or resource name, the access needed, and the business reason. Requests needing approval are routed to Human IT Support."
+    },
+    {
+      "question": "What should I do about a suspicious email?",
+      "answer": "Do not click links or open attachments. Report the message to Human IT Support immediately."
+    }
+  ],
+  "escalation_triggers": [
+    "Explicit request to speak to Human IT Support",
+    "Angry or aggressive tone",
+    "More than 2 consecutive unanswered questions",
+    "Suspected phishing, malware, account compromise, or unauthorized access",
+    "Lost or stolen device",
+    "Widespread outage or multiple employees affected",
+    "Requests requiring privileged access, licensing decisions, or manager approval",
+    "Repeated device failure, physical damage, or inability to power on"
+  ]
+}
