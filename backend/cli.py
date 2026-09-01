@@ -133,7 +133,7 @@ def main():
 
         if is_neg or is_exp:
             reason = neg_reason or exp_reason
-            log_escalation(session_id, reason, format_messages(state))
+            log_escalation(session_id, reason, format_messages(state), "keyword")
             state["stage"] = "escalated"
             reply = ("I'm sorry this has been frustrating. I'm flagging this for Human IT Support "
                      "immediately — an IT support analyst will follow up shortly. 🛠️")

@@ -1,0 +1,13 @@
+{
+  "split_sizes": {
+    "train": 432,
+    "validation": 92,
+    "test": 92
+  },
+  "test_metrics": {
+    "accuracy": 0.6304347826086957,
+    "precision_macro": 0.6898486317603965,
+    "recall_macro": 0.6304347826086957,
+    "f1_macro": 0.6313282647584973
+  }
+}

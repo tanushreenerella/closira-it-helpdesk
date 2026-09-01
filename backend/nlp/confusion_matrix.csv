@@ -1,0 +1,5 @@
+actual/predicted,frustrated,explicit_human_request,repeated_confusion,normal
+frustrated,17,1,1,4
+explicit_human_request,1,13,1,8
+repeated_confusion,2,1,9,11
+normal,0,2,2,19

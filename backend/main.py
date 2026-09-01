@@ -8,7 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from langchain_core.messages import HumanMessage
 
 from .agent import APP, get_initial_state
-from .nlp.classify import classify
 
 app = FastAPI(title="Closira IT Helpdesk AI")
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"], allow_credentials=True,
@@ -48,10 +47,10 @@ async def websocket_endpoint(websocket: WebSocket):
             user_message = data.get("message", "").strip()
             if not user_message:
                 continue
-            predicted_escalation_label = classify(user_message)
             state["messages"].append(HumanMessage(content=user_message))
             before = len(state["messages"])
             state = APP.invoke(state)
+            predicted_escalation_label = state.get("intent_label", "normal")
             agent_messages = [m for m in state["messages"][before:]
                               if getattr(m, "type", None) == "ai" or getattr(m, "role", None) == "assistant"]
             if not agent_messages:

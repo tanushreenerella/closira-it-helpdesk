@@ -13,9 +13,9 @@ from langchain_core.messages import AIMessage
 from groq import Groq
 from dotenv import load_dotenv
 try:
-    from .nlp.classify import classify, model_available
+    from .nlp.classifier import classify_employee_message
 except ImportError:
-    from nlp.classify import classify, model_available
+    from nlp.classifier import classify_employee_message
 
 load_dotenv()
 
@@ -27,16 +27,22 @@ SOP_TEXT = json.dumps(SOP, indent=2)
 
 # ── Groq client ──────────────────────────────────────────────────────────────
 client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
-MODEL = "llama-3.3-70b-versatile"
+MODEL = "openai/gpt-oss-120b"
 
 # ── Escalation log ───────────────────────────────────────────────────────────
 ESCALATION_LOG_FILE = os.path.join(os.path.dirname(__file__), "escalation_log.json")
+ESCALATION_CONFIDENCE_THRESHOLD = 0.60
+TRIVIAL_MESSAGES = {"hi", "hello", "hey", "hiya", "ok", "okay", "thanks", "thank you", "yes", "no", "yep", "nope"}
 
-def log_escalation(session_id: str, reason: str, conversation: list):
+def log_escalation(session_id: str, reason: str, conversation: list, trigger: str = "groq",
+                   intent_label: str = "normal", intent_confidence: float = 0.0):
     entry = {
         "session_id": session_id,
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "reason": reason,
+        "escalation_trigger": trigger,
+        "intent_label": intent_label,
+        "intent_confidence": intent_confidence,
         "conversation_snapshot": conversation[-6:]
     }
     existing = []
@@ -60,6 +66,9 @@ class AgentState(TypedDict):
     escalation_reason: str
     sop_gaps: list
     conversation_ended: bool
+    intent_label: str
+    intent_confidence: float
+    escalation_trigger: str
 
 # ── System prompts ────────────────────────────────────────────────────────────
 SYSTEM_BASE = f"""You are the AI Support Assistant for Closira IT Helpdesk, providing employee IT support.
@@ -151,11 +160,6 @@ def sentiment_check(text: str) -> tuple[bool, str]:
         "unacceptable", "scam", "fraud", "worst", "never coming back",
         "this is ridiculous", "i demand", "incompetent", "hate"
     ]
-    prediction = classify(text)
-    if model_available():
-        if prediction == "frustrated":
-            return True, "Frustrated sentiment detected by classifier"
-        return False, ""
     text_lower = text.lower()
     for kw in anger_keywords:
         if kw in text_lower:
@@ -166,11 +170,6 @@ def explicit_escalation(text: str) -> tuple[bool, str]:
     """Check if user explicitly asks for a human."""
     phrases = ["speak to a human", "talk to someone", "real person",
                "human agent", "manager", "supervisor", "speak to staff"]
-    prediction = classify(text)
-    if model_available():
-        if prediction == "explicit_human_request":
-            return True, "Customer requested human agent"
-        return False, ""
     text_lower = text.lower()
     for p in phrases:
         if p in text_lower:
@@ -195,41 +194,80 @@ def format_messages(state: AgentState) -> list:
     return formatted
 
 # ── Nodes ─────────────────────────────────────────────────────────────────────
+def intent_classification_node(state: AgentState) -> AgentState:
+    """Classify the newest employee message before its support stage runs."""
+    message = state["messages"][-1]
+    user_msg = message.content if hasattr(message, "content") else message.get("content", "")
+    if user_msg.lower().strip() in TRIVIAL_MESSAGES:
+        prediction = {"label": "normal", "confidence": 0.0}
+    else:
+        try:
+            prediction = classify_employee_message(user_msg)
+        except Exception:
+            prediction = {"label": "normal", "confidence": 0.0}
+    return {**state, "intent_label": prediction["label"], "intent_confidence": prediction["confidence"]}
+
+
+def classifier_escalation(state: AgentState, text: str) -> tuple[bool, str, str, str]:
+    """Translate the model intent into the existing escalation behavior."""
+    label = state.get("intent_label", "normal")
+    confidence = state.get("intent_confidence", 0.0)
+    outcomes = {
+        "frustrated": (
+            "Frustrated sentiment detected by DistilBERT",
+            "I'm sorry this has been frustrating. I'm going to connect you with one of our team members right away.",
+        ),
+        "explicit_human_request": (
+            "Customer requested human agent",
+            "I'm flagging this conversation for Human IT Support right away. An IT support analyst will follow up with you shortly.",
+        ),
+        "repeated_confusion": (
+            "Repeated confusion detected by DistilBERT",
+            "I can see the previous guidance has not resolved this. I'm escalating this to Human IT Support so they can take over.",
+        ),
+    }
+    model_reason, model_response = outcomes.get(label, ("", ""))
+    model_escalation = bool(model_reason) and confidence >= ESCALATION_CONFIDENCE_THRESHOLD
+
+    is_negative, negative_reason = sentiment_check(text)
+    is_explicit, explicit_reason = explicit_escalation(text)
+    keyword_reason = negative_reason or explicit_reason
+    keyword_escalation = is_negative or is_explicit
+
+    if model_escalation and keyword_escalation:
+        return True, model_reason, model_response, "both"
+    if model_escalation:
+        return True, model_reason, model_response, "distilbert"
+    if keyword_escalation:
+        return True, keyword_reason, (
+            "I'm sorry this has been frustrating. I'm going to connect you with one of our team members right away."
+            if is_negative else
+            "I'm flagging this conversation for Human IT Support right away. An IT support analyst will follow up with you shortly."
+        ), "keyword"
+    return False, "", "", ""
+
+
+def escalation_result(state: AgentState):
+    message = state["messages"][-1]
+    text = message.content if hasattr(message, "content") else message.get("content", "")
+    should_escalate, reason, response, trigger = classifier_escalation(state, text)
+    if not should_escalate:
+        return None
+    result = assistant_payload({"response": response, "confidence": 1.0,
+                                "escalate": True, "escalation_reason": reason})
+    log_escalation(state["session_id"], reason, format_messages(state), trigger,
+                   state["intent_label"], state["intent_confidence"])
+    return {**state, "stage": "escalated", "escalation_reason": reason, "escalation_trigger": trigger,
+            "messages": state["messages"] + [AIMessage(content=json.dumps(result))]}
+
+
 def faq_node(state: AgentState) -> AgentState:
     """Stage 1: Answer inbound questions from SOP only."""
     user_msg = state["messages"][-1].content if hasattr(state["messages"][-1], "content") else state["messages"][-1].get("content", "")
 
-    is_negative, neg_reason = sentiment_check(user_msg)
-    if is_negative:
-        result = assistant_payload({
-            "response": "I'm really sorry to hear you're feeling this way. I'm going to connect you with one of our team members right away so they can assist you properly.",
-            "confidence": 1.0,
-            "escalate": True,
-            "escalation_reason": neg_reason
-        })
-        log_escalation(state["session_id"], neg_reason, format_messages(state))
-        return {
-            **state,
-            "stage": "escalated",
-            "escalation_reason": neg_reason,
-            "messages": state["messages"] + [AIMessage(content=json.dumps(result))]
-        }
-
-    is_explicit, explicit_reason = explicit_escalation(user_msg)
-    if is_explicit:
-        result = assistant_payload({
-            "response": "I'm flagging this conversation for Human IT Support right away. An IT support analyst will follow up with you shortly.",
-            "confidence": 1.0,
-            "escalate": True,
-            "escalation_reason": explicit_reason
-        })
-        log_escalation(state["session_id"], explicit_reason, format_messages(state))
-        return {
-            **state,
-            "stage": "escalated",
-            "escalation_reason": explicit_reason,
-            "messages": state["messages"] + [AIMessage(content=json.dumps(result))]
-        }
+    escalation = escalation_result(state)
+    if escalation:
+        return escalation
 
     result = assistant_payload(llm_call(SYSTEM_BASE, format_messages(state)))
 
@@ -246,7 +284,8 @@ def faq_node(state: AgentState) -> AgentState:
         reason = result.get("escalation_reason") or "Question outside SOP data"
         result["escalate"] = True
         result["escalation_reason"] = reason
-        log_escalation(state["session_id"], reason, format_messages(state))
+        log_escalation(state["session_id"], reason, format_messages(state), "groq",
+                       state["intent_label"], state["intent_confidence"])
         return {
             **state,
             "stage": "escalated",
@@ -273,21 +312,9 @@ def qualify_node(state: AgentState) -> AgentState:
     """Stage 2: Ask structured qualification questions."""
     user_msg = state["messages"][-1].content if hasattr(state["messages"][-1], "content") else state["messages"][-1].get("content", "")
 
-    is_negative, neg_reason = sentiment_check(user_msg)
-    if is_negative:
-        result = assistant_payload({
-            "response": "I'm really sorry to hear you're feeling this way. I'm going to connect you with one of our team members right away so they can assist you properly.",
-            "confidence": 1.0,
-            "escalate": True,
-            "escalation_reason": neg_reason
-        })
-        log_escalation(state["session_id"], neg_reason, format_messages(state))
-        return {
-            **state,
-            "stage": "escalated",
-            "escalation_reason": neg_reason,
-            "messages": state["messages"] + [AIMessage(content=json.dumps(result))]
-        }
+    escalation = escalation_result(state)
+    if escalation:
+        return escalation
 
     new_qual = state["qualification"].copy()
     q_count = len(new_qual)
@@ -364,7 +391,9 @@ Return ONLY valid JSON, no markdown fences:
 
     summary_file = os.path.join(os.path.dirname(__file__), f"summary_{state['session_id'][:8]}.json")
     with open(summary_file, "w") as f:
-        json.dump({"session_id": state["session_id"], "timestamp": datetime.utcnow().isoformat() + "Z", **summary}, f, indent=2)
+        json.dump({"session_id": state["session_id"], "timestamp": datetime.utcnow().isoformat() + "Z",
+                   "intent_label": state["intent_label"], "intent_confidence": state["intent_confidence"],
+                   "escalation_trigger": state["escalation_trigger"], **summary}, f, indent=2)
 
     result = assistant_payload({
         "response": "Session summary saved for Human IT Support. Thank you for using the AI Support Assistant.",
@@ -399,12 +428,20 @@ def after_qualify_router(state: AgentState) -> str:
 # ── Build Graph ───────────────────────────────────────────────────────────────
 def build_graph():
     graph = StateGraph(AgentState)
+    graph.add_node("intent_classification", intent_classification_node)
     graph.add_node("faq", faq_node)
     graph.add_node("qualify", qualify_node)
     graph.add_node("escalation", escalation_node)
     graph.add_node("summary", summary_node)
 
     graph.set_conditional_entry_point(router, {
+        "faq": "intent_classification",
+        "qualify": "intent_classification",
+        "escalation": "escalation",
+        "summary": "summary",
+        END: END
+    })
+    graph.add_conditional_edges("intent_classification", router, {
         "faq": "faq",
         "qualify": "qualify",
         "escalation": "escalation",
@@ -436,5 +473,8 @@ def get_initial_state(session_id: str = None) -> AgentState:
         "qualification": {},
         "escalation_reason": "",
         "sop_gaps": [],
-        "conversation_ended": False
+        "conversation_ended": False,
+        "intent_label": "normal",
+        "intent_confidence": 0.0,
+        "escalation_trigger": ""
     }
