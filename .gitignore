@@ -33,7 +33,7 @@ htmlcov/
 backend/nlp/dataset.csv
 backend/nlp/baseline_f1.txt
 backend/nlp/bert_model/
-
+backend/nlp/model/
 backend/escalation_log.json
 backend/summary_*.json
 
