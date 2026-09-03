@@ -18,7 +18,15 @@ from agent import (
 )
 
 app = FastAPI(title="Closira IT Helpdesk AI")
+from fastapi.middleware.cors import CORSMiddleware
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://closira-it-helpdesk.vercel.app"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 # ── In-memory session store ──────────────────────────────────────────────────
 sessions: dict = {}
 
