@@ -10,3 +10,4 @@ torch>=2.2.0
 datasets>=2.19.0
 scikit-learn>=1.4.0
 accelerate>=0.29.0
+psycopg[binary]>=3.2,<4

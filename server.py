@@ -870,6 +870,8 @@ async def websocket_endpoint(websocket: WebSocket):
     except WebSocketDisconnect:
         pass
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         try:
             await websocket.send_json({"type": "system", "message": f"Connection error: {str(e)}"})
         except Exception:

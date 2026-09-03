@@ -4,9 +4,14 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
 type Message = { role: "ai" | "user" | "system"; text: string; confidence?: number; escalate?: boolean; label?: string; escalationReason?: string };
 type Meta = { confidence?: number; predicted_escalation_label?: string; escalation_reason?: string };
+type SessionSummary = { session_id: string; stage: string; preview: string; updated_at: string };
+type SessionState = { session_id: string; stage: string; sop_gaps: string[]; qualification: Record<string, string>; meta: Meta; messages: Message[] };
 
 const labels: Record<string, string> = { faq: "AI support", qualify: "Information gathering", escalated: "Human support required", summary: "Session summary" };
 const categories = ["Account & Password", "Wi-Fi / Network", "VPN", "Device Issues", "Email", "Software & Access"];
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || WS_URL.replace(/^ws/, "http").replace(/\/ws$/, "");
+const SESSION_STORAGE_KEY = "closira.session_id";
 
 function confidenceTone(value = 0) { return value >= .75 ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : value >= .5 ? "bg-amber-50 text-amber-800 ring-amber-200" : "bg-red-50 text-red-800 ring-red-200"; }
 function stageTone(stage: string) { return stage === "escalated" ? "bg-red-50 text-red-800 ring-red-200" : stage === "summary" ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : stage === "qualify" ? "bg-amber-50 text-amber-800 ring-amber-200" : "bg-teal-50 text-teal-800 ring-teal-200"; }
@@ -24,8 +29,27 @@ export default function Home() {
   const [qualification, setQualification] = useState<Record<string, string>>({});
   const [meta, setMeta] = useState<Meta>({});
   const [connected, setConnected] = useState(false);
+  const [history, setHistory] = useState<SessionSummary[]>([]);
 
-  const connect = useCallback(() => {
+  const loadHistory = useCallback(async () => {
+    try {
+      const response = await fetch(`${API_URL}/sessions`);
+      if (response.ok) setHistory(await response.json());
+    } catch {
+      // The active WebSocket still reports backend connection failures.
+    }
+  }, []);
+
+  const applySessionState = useCallback((saved: SessionState) => {
+    setSession(saved.session_id);
+    setMessages(saved.messages);
+    setStage(saved.stage);
+    setGaps(saved.sop_gaps || []);
+    setQualification(saved.qualification || {});
+    setMeta(saved.meta || {});
+  }, []);
+
+  const connect = useCallback((requestedSessionId?: string, preserveDisplay = false) => {
     // Safely tear down any existing socket before opening a new one.
     // Nulling onclose first prevents a stale handler from firing during
     // teardown and touching state on an unmounting/reconnecting component
@@ -39,16 +63,17 @@ export default function Home() {
       ws.current = null;
     }
 
-    setMessages([]);
-    setStage("faq");
-    setSession("");
-    setGaps([]);
-    setQualification({});
-    setMeta({});
+    if (!preserveDisplay) {
+      setMessages([]);
+      setStage("faq");
+      setSession("");
+      setGaps([]);
+      setQualification({});
+      setMeta({});
+    }
 
-    const socket = new WebSocket(
-      process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws"
-    );
+    const activeSessionId = requestedSessionId || window.localStorage.getItem(SESSION_STORAGE_KEY);
+    const socket = new WebSocket(activeSessionId ? `${WS_URL}?session_id=${encodeURIComponent(activeSessionId)}` : WS_URL);
     ws.current = socket;
 
     socket.onopen = () => setConnected(true);
@@ -57,6 +82,10 @@ export default function Home() {
       const payload = JSON.parse(data);
       if (payload.type === "session_id") {
         setSession(payload.session_id);
+        window.localStorage.setItem(SESSION_STORAGE_KEY, payload.session_id);
+        void loadHistory();
+      } else if (payload.type === "session_state") {
+        applySessionState(payload as SessionState);
       } else if (payload.type === "message") {
         setMessages((old) => [
           ...old,
@@ -77,10 +106,29 @@ export default function Home() {
         setMessages((old) => [...old, { role: "system", text: payload.message }]);
       }
     };
-  }, []);
+  }, [applySessionState, loadHistory]);
+
+  const openSession = useCallback(async (sessionId: string) => {
+    try {
+      const response = await fetch(`${API_URL}/sessions/${encodeURIComponent(sessionId)}`);
+      if (!response.ok) return;
+      const saved = await response.json() as SessionState;
+      window.localStorage.setItem(SESSION_STORAGE_KEY, saved.session_id);
+      applySessionState(saved);
+      connect(saved.session_id, true);
+    } catch {
+      // Leave the current chat untouched if the saved session cannot be loaded.
+    }
+  }, [applySessionState, connect]);
+
+  const startNewSession = useCallback(() => {
+    window.localStorage.removeItem(SESSION_STORAGE_KEY);
+    connect();
+  }, [connect]);
 
   useEffect(() => {
     connect();
+    void loadHistory();
 
     return () => {
       if (ws.current) {
@@ -91,7 +139,7 @@ export default function Home() {
         ws.current = null;
       }
     };
-  }, [connect]);
+  }, [connect, loadHistory]);
 
   useEffect(() => {
     messagesEnd.current?.scrollIntoView({ behavior: "smooth" });
@@ -124,7 +172,7 @@ export default function Home() {
           <i className={`size-2 rounded-full ${connected ? "bg-emerald-400 shadow-[0_0_0_4px_rgba(74,222,128,.15)]" : "bg-red-400"}`} />
           {connected ? "Online" : "Reconnecting"}
         </div>
-        <button onClick={connect} className="ml-2 flex items-center gap-1.5 rounded-lg border border-teal-400/50 px-3 py-2 text-xs font-semibold text-teal-200 transition hover:bg-teal-400/10">
+        <button onClick={startNewSession} className="ml-2 flex items-center gap-1.5 rounded-lg border border-teal-400/50 px-3 py-2 text-xs font-semibold text-teal-200 transition hover:bg-teal-400/10">
           <Icon name="plus" /> New Session
         </button>
       </header>
@@ -243,6 +291,21 @@ export default function Home() {
               </div>
             </Card>
 
+            <Card title="Chat history">
+              <div className="max-h-48 space-y-1 overflow-y-auto">
+                {history.length ? history.map((item) => (
+                  <button
+                    key={item.session_id}
+                    onClick={() => void openSession(item.session_id)}
+                    className={`w-full rounded-lg px-2.5 py-2 text-left transition hover:bg-teal-50 ${item.session_id === session ? "bg-teal-50" : ""}`}
+                  >
+                    <div className="truncate text-sm font-medium text-slate-700">{item.preview}</div>
+                    <div className="mt-0.5 text-[10px] uppercase tracking-[.08em] text-slate-400">{labels[item.stage] || item.stage}</div>
+                  </button>
+                )) : <p className="text-sm italic text-slate-400">No saved sessions yet.</p>}
+              </div>
+            </Card>
+
             <Card title="AI classification">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-slate-500">Confidence</span>
@@ -299,7 +362,7 @@ export default function Home() {
               </Card>
             )}
 
-            <button onClick={connect} className="w-full rounded-lg border border-teal-600 bg-white px-3 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-50">
+            <button onClick={startNewSession} className="w-full rounded-lg border border-teal-600 bg-white px-3 py-2.5 text-sm font-semibold text-teal-800 transition hover:bg-teal-50">
               Start New Session
             </button>
           </div>

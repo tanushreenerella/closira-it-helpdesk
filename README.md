@@ -13,8 +13,7 @@ backend/
   cli.py                 terminal support runner
   sop.json               IT Helpdesk SOP and troubleshooting playbooks
   nlp/                   dataset, training scripts, runtime classifier, model artifact directory
-  escalation_log.json    generated escalation records
-  summary_*.json         generated session summaries
+  database.py             PostgreSQL session persistence
 frontend/
   app/                   Next.js App Router UI
   components/            reserved for reusable UI components
@@ -22,19 +21,21 @@ frontend/
 
 ## Prerequisites
 
-- Python 3.10+ and a `GROQ_API_KEY`
+- Python 3.10+, a `GROQ_API_KEY`, and PostgreSQL
 - Node.js 18.17+ and npm
 
 Set the API key in your shell (or in the repository `.env`):
 
 ```bash
 export GROQ_API_KEY=gsk_...
+export DATABASE_URL=postgresql://closira_user:password@localhost:5432/closira
 ```
 
 On Windows:
 
 ```cmd
 set GROQ_API_KEY=gsk_...
+set DATABASE_URL=postgresql://closira_user:password@localhost:5432/closira
 ```
 
 ## Run the backend
@@ -47,6 +48,7 @@ uvicorn backend.main:app --reload --port 8000
 ```
 
 The API health endpoint is `http://localhost:8000/health`; the WebSocket endpoint is `ws://localhost:8000/ws`.
+The backend creates the required PostgreSQL tables at startup.
 
 ## Run the frontend
 
@@ -79,4 +81,4 @@ python backend/nlp/finetune_bert.py
 
 ## Limits
 
-Sessions remain in memory, responses are not token-streamed, one static SOP is used, and authentication is intentionally out of scope.
+Responses are not token-streamed, one static SOP is used, and authentication is intentionally out of scope.

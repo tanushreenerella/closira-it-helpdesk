@@ -1,0 +1,160 @@
+[
+  {
+    "id": "normal_wifi_setup",
+    "category": "normal",
+    "message": "How do I connect my laptop to the office Wi-Fi?",
+    "expected_intent": "normal",
+    "expected_escalation": false,
+    "expected_route": "faq",
+    "expected_stage": "qualify"
+  },
+  {
+    "id": "normal_email_access",
+    "category": "normal",
+    "message": "How can I access my company email on my phone?",
+    "expected_intent": "normal",
+    "expected_escalation": false,
+    "expected_route": "faq",
+    "expected_stage": "qualify"
+  },
+  {
+    "id": "normal_vpn_setup",
+    "category": "normal",
+    "message": "How do I set up the company VPN on Windows?",
+    "expected_intent": "normal",
+    "expected_escalation": false,
+    "expected_route": "faq",
+    "expected_stage": "qualify"
+  },
+  {
+    "id": "normal_software_install",
+    "category": "normal",
+    "message": "How do I install the approved software on my laptop?",
+    "expected_intent": "normal",
+    "expected_escalation": false,
+    "expected_route": "faq",
+    "expected_stage": "qualify"
+  },
+
+  {
+    "id": "frustrated_wifi",
+    "category": "frustrated",
+    "message": "I have tried everything and this Wi-Fi problem is driving me crazy.",
+    "expected_intent": "frustrated",
+    "expected_escalation": true,
+    "expected_route": "escalation",
+    "expected_stage": "escalated"
+  },
+  {
+    "id": "frustrated_vpn",
+    "category": "frustrated",
+    "message": "I am extremely frustrated. The VPN has been failing all day.",
+    "expected_intent": "frustrated",
+    "expected_escalation": true,
+    "expected_route": "escalation",
+    "expected_stage": "escalated"
+  },
+  {
+    "id": "frustrated_email",
+    "category": "frustrated",
+    "message": "This email issue is so frustrating. I cannot get any work done.",
+    "expected_intent": "frustrated",
+    "expected_escalation": true,
+    "expected_route": "escalation",
+    "expected_stage": "escalated"
+  },
+
+  {
+    "id": "human_agent_now",
+    "category": "explicit_human_request",
+    "message": "I need a human support agent now.",
+    "expected_intent": "explicit_human_request",
+    "expected_escalation": true,
+    "expected_route": "escalation",
+    "expected_stage": "escalated"
+  },
+  {
+    "id": "human_support",
+    "category": "explicit_human_request",
+    "message": "Can you transfer me to IT support?",
+    "expected_intent": "explicit_human_request",
+    "expected_escalation": true,
+    "expected_route": "escalation",
+    "expected_stage": "escalated"
+  },
+  {
+    "id": "human_person",
+    "category": "explicit_human_request",
+    "message": "I don't want to talk to the bot. Let me speak with a person.",
+    "expected_intent": "explicit_human_request",
+    "expected_escalation": true,
+    "expected_route": "escalation",
+    "expected_stage": "escalated"
+  },
+
+  {
+    "id": "confusion_wifi",
+    "category": "repeated_confusion",
+    "message": "I followed the Wi-Fi instructions twice but I still do not understand what I am supposed to do.",
+    "expected_intent": "repeated_confusion",
+    "expected_escalation": true,
+    "expected_route": "escalation",
+    "expected_stage": "escalated"
+  },
+  {
+    "id": "confusion_vpn",
+    "category": "repeated_confusion",
+    "message": "I already tried those VPN steps several times and they are not helping.",
+    "expected_intent": "repeated_confusion",
+    "expected_escalation": true,
+    "expected_route": "escalation",
+    "expected_stage": "escalated"
+  },
+  {
+    "id": "confusion_password",
+    "category": "repeated_confusion",
+    "message": "I keep following the password instructions but I am still confused.",
+    "expected_intent": "repeated_confusion",
+    "expected_escalation": true,
+    "expected_route": "escalation",
+    "expected_stage": "escalated"
+  },
+
+  {
+    "id": "keyword_human",
+    "category": "keyword_escalation",
+    "message": "I need a human to fix this issue.",
+    "expected_intent": "explicit_human_request",
+    "expected_escalation": true,
+    "expected_route": "escalation",
+    "expected_stage": "escalated"
+  },
+  {
+    "id": "keyword_unacceptable",
+    "category": "keyword_escalation",
+    "message": "This is unacceptable. Please get someone to help me.",
+    "expected_intent": "frustrated",
+    "expected_escalation": true,
+    "expected_route": "escalation",
+    "expected_stage": "escalated"
+  },
+
+  {
+    "id": "trivial_ok",
+    "category": "greeting_trivial",
+    "message": "ok",
+    "expected_intent": "normal",
+    "expected_escalation": false,
+    "expected_route": "faq",
+    "expected_stage": "qualify"
+  },
+  {
+    "id": "trivial_yes",
+    "category": "greeting_trivial",
+    "message": "yes",
+    "expected_intent": "normal",
+    "expected_escalation": false,
+    "expected_route": "faq",
+    "expected_stage": "qualify"
+  }
+]

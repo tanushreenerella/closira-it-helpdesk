@@ -6,7 +6,6 @@ Built with LangGraph + Groq (LLaMA 3.3 70B)
 import json
 import os
 import uuid
-from datetime import datetime
 from typing import TypedDict, Literal
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import AIMessage
@@ -14,8 +13,10 @@ from groq import Groq
 from dotenv import load_dotenv
 try:
     from .nlp.classifier import classify_employee_message
+    from .database import record_escalation, save_final_summary
 except ImportError:
     from nlp.classifier import classify_employee_message
+    from database import record_escalation, save_final_summary
 
 load_dotenv()
 
@@ -30,31 +31,12 @@ client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 MODEL = "openai/gpt-oss-120b"
 
 # ── Escalation log ───────────────────────────────────────────────────────────
-ESCALATION_LOG_FILE = os.path.join(os.path.dirname(__file__), "escalation_log.json")
 ESCALATION_CONFIDENCE_THRESHOLD = 0.60
 TRIVIAL_MESSAGES = {"hi", "hello", "hey", "hiya", "ok", "okay", "thanks", "thank you", "yes", "no", "yep", "nope"}
 
 def log_escalation(session_id: str, reason: str, conversation: list, trigger: str = "groq",
                    intent_label: str = "normal", intent_confidence: float = 0.0):
-    entry = {
-        "session_id": session_id,
-        "timestamp": datetime.utcnow().isoformat() + "Z",
-        "reason": reason,
-        "escalation_trigger": trigger,
-        "intent_label": intent_label,
-        "intent_confidence": intent_confidence,
-        "conversation_snapshot": conversation[-6:]
-    }
-    existing = []
-    if os.path.exists(ESCALATION_LOG_FILE):
-        with open(ESCALATION_LOG_FILE, "r") as f:
-            try:
-                existing = json.load(f)
-            except json.JSONDecodeError:
-                existing = []
-    existing.append(entry)
-    with open(ESCALATION_LOG_FILE, "w") as f:
-        json.dump(existing, f, indent=2)
+    record_escalation(session_id, reason, trigger, intent_label, intent_confidence)
 
 # ── State ────────────────────────────────────────────────────────────────────
 class AgentState(TypedDict):
@@ -169,11 +151,24 @@ def sentiment_check(text: str) -> tuple[bool, str]:
 def explicit_escalation(text: str) -> tuple[bool, str]:
     """Check if user explicitly asks for a human."""
     phrases = ["speak to a human", "talk to someone", "real person",
-               "human agent", "manager", "supervisor", "speak to staff"]
+               "human", "human agent", "person", "representative", "support agent",
+               "manager", "supervisor", "speak to staff", "transfer me to it support"]
     text_lower = text.lower()
     for p in phrases:
         if p in text_lower:
             return True, "Customer requested human agent"
+    return False, ""
+
+def repeated_failure_check(text: str) -> tuple[bool, str]:
+    """Check for repeated troubleshooting attempts that have not resolved the issue."""
+    failure_keywords = [
+        "already tried", "tried again", "tried multiple times",
+        "still doesn't work", "still confused", "still do not understand", "nothing is working",
+    ]
+    text_lower = text.lower()
+    for keyword in failure_keywords:
+        if keyword in text_lower:
+            return True, f"Repeated failure signal detected: '{keyword}'"
     return False, ""
 
 def format_messages(state: AgentState) -> list:
@@ -231,8 +226,9 @@ def classifier_escalation(state: AgentState, text: str) -> tuple[bool, str, str,
 
     is_negative, negative_reason = sentiment_check(text)
     is_explicit, explicit_reason = explicit_escalation(text)
-    keyword_reason = negative_reason or explicit_reason
-    keyword_escalation = is_negative or is_explicit
+    is_repeated_failure, repeated_failure_reason = repeated_failure_check(text)
+    keyword_reason = negative_reason or explicit_reason or repeated_failure_reason
+    keyword_escalation = is_negative or is_explicit or is_repeated_failure
 
     if model_escalation and keyword_escalation:
         return True, model_reason, model_response, "both"
@@ -243,6 +239,8 @@ def classifier_escalation(state: AgentState, text: str) -> tuple[bool, str, str,
             "I'm sorry this has been frustrating. I'm going to connect you with one of our team members right away."
             if is_negative else
             "I'm flagging this conversation for Human IT Support right away. An IT support analyst will follow up with you shortly."
+            if is_explicit else
+            "I can see the previous guidance has not resolved this. I'm escalating this to Human IT Support so they can take over."
         ), "keyword"
     return False, "", "", ""
 
@@ -389,11 +387,12 @@ Return ONLY valid JSON, no markdown fences:
     except Exception:
         summary = {"raw_summary": raw}
 
-    summary_file = os.path.join(os.path.dirname(__file__), f"summary_{state['session_id'][:8]}.json")
-    with open(summary_file, "w") as f:
-        json.dump({"session_id": state["session_id"], "timestamp": datetime.utcnow().isoformat() + "Z",
-                   "intent_label": state["intent_label"], "intent_confidence": state["intent_confidence"],
-                   "escalation_trigger": state["escalation_trigger"], **summary}, f, indent=2)
+    save_final_summary(state["session_id"], {
+        "intent_label": state["intent_label"],
+        "intent_confidence": state["intent_confidence"],
+        "escalation_trigger": state["escalation_trigger"],
+        **summary,
+    })
 
     result = assistant_payload({
         "response": "Session summary saved for Human IT Support. Thank you for using the AI Support Assistant.",
