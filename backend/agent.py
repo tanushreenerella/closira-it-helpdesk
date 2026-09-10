@@ -6,6 +6,7 @@ Built with LangGraph + Groq (LLaMA 3.3 70B)
 import json
 import os
 import uuid
+from datetime import datetime, timezone
 from typing import TypedDict, Literal
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import AIMessage
@@ -38,6 +39,35 @@ def log_escalation(session_id: str, reason: str, conversation: list, trigger: st
                    intent_label: str = "normal", intent_confidence: float = 0.0):
     record_escalation(session_id, reason, trigger, intent_label, intent_confidence)
 
+# ── NEW: Autonomous routing config ───────────────────────────────────────────
+AUTONOMOUS_ROUTING = os.environ.get("AUTONOMOUS_ROUTING", "false").strip().lower() == "true"
+DECISION_ACTIONS = ["faq", "qualify", "escalate", "summary"]
+MAX_REPEAT_DECISIONS = 3  # loop guard: force escalation after this many identical non-terminal decisions in a row
+
+DECISION_LOG_PATH = os.path.join(os.path.dirname(__file__), "decision_log.json")
+
+def log_decision(session_id: str, chosen: str, overridden_by: str, reason: str):
+    """Append a decision node event to decision_log.json (local file, mirrors escalation_log.json style)."""
+    entry = {
+        "session_id": session_id,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "chosen_action": chosen,
+        "overridden_by": overridden_by,  # "" if not overridden, else "distilbert"/"keyword"/"validation_fallback"/"turn_limit"
+        "reason": reason,
+    }
+    try:
+        if os.path.exists(DECISION_LOG_PATH):
+            with open(DECISION_LOG_PATH, "r") as f:
+                data = json.load(f)
+        else:
+            data = []
+        data.append(entry)
+        with open(DECISION_LOG_PATH, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception:
+        # Logging must never break the graph
+        pass
+
 # ── State ────────────────────────────────────────────────────────────────────
 class AgentState(TypedDict):
     messages: list
@@ -51,6 +81,9 @@ class AgentState(TypedDict):
     intent_label: str
     intent_confidence: float
     escalation_trigger: str
+    # NEW: loop guard for autonomous decision node
+    last_decision: str
+    decision_repeat_count: int
 
 # ── System prompts ────────────────────────────────────────────────────────────
 SYSTEM_BASE = f"""You are the AI Support Assistant for Closira IT Helpdesk, providing employee IT support.
@@ -90,6 +123,22 @@ QUALIFY_PROMPT = """You are now in IT issue qualification mode. Your goal is to 
 Ask only one question at a time. Never ask for a password, one-time code, or other secret. Once you have collected all 3 answers, set stage_complete=true and summarise what was collected in your response.
 
 Still follow the same JSON response format and escalation rules."""
+
+# NEW: decision node prompt
+DECISION_SYSTEM_PROMPT = """You are a routing controller for an IT helpdesk agent. Based on the conversation and the state summary given, choose the SINGLE most appropriate next action.
+
+Valid actions (choose exactly one):
+- "faq": answer or troubleshoot the employee's question using SOP data
+- "qualify": collect structured issue details (name, issue description, device/OS)
+- "escalate": hand off to a human IT support analyst
+- "summary": wrap up and produce a session summary (only appropriate once qualification is complete)
+
+Return ONLY valid JSON, no markdown fences:
+{
+  "action": "<one of: faq, qualify, escalate, summary>",
+  "reasoning": "<one short sentence>"
+}
+"""
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 def llm_call(system: str, messages: list) -> dict:
@@ -259,6 +308,92 @@ def escalation_result(state: AgentState):
             "messages": state["messages"] + [AIMessage(content=json.dumps(result))]}
 
 
+# NEW: autonomous decision node ───────────────────────────────────────────────
+def decision_node(state: AgentState) -> AgentState:
+    """
+    Decides which stage to route to next. When AUTONOMOUS_ROUTING is off, this
+    is a no-op that preserves the original deterministic behavior (state["stage"]
+    is left exactly as it was, so the existing router sends the request to the
+    same node it always would have).
+
+    When AUTONOMOUS_ROUTING is on:
+      1. DistilBERT / keyword escalation signals are checked FIRST and act as a
+         hard override — if they fire, we go straight to escalation, no LLM call.
+      2. Otherwise an LLM call picks one of DECISION_ACTIONS.
+      3. The LLM's output is validated against DECISION_ACTIONS; any invalid
+         output or call failure falls back to the current deterministic stage.
+      4. A repeat counter forces escalation if the same non-terminal action is
+         chosen too many turns in a row (loop guard).
+      5. Every outcome is logged to decision_log.json.
+    """
+    if not AUTONOMOUS_ROUTING:
+        return state
+
+    message = state["messages"][-1]
+    text = message.content if hasattr(message, "content") else message.get("content", "")
+
+    # 1. Hard override — DistilBERT / keyword escalation always wins.
+    should_escalate, reason, _response, trigger = classifier_escalation(state, text)
+    if should_escalate:
+        log_decision(state["session_id"], "escalate", trigger, reason)
+        return {**state, "stage": "escalated", "last_decision": "escalate", "decision_repeat_count": 0}
+
+    # 2. Ask the LLM to pick the next action.
+    qual_progress = f"{len(state.get('qualification', {}))}/{len(QUALIFY_QUESTIONS)}"
+    state_summary = (
+        f"Current deterministic stage (prior): {state['stage']}\n"
+        f"Unanswered SOP questions in a row: {state.get('unanswered_count', 0)}\n"
+        f"Qualification progress: {qual_progress}\n"
+        f"SOP gaps logged so far: {len(state.get('sop_gaps', []))}\n"
+    )
+    decision_messages = format_messages(state) + [
+        {"role": "user", "content": f"[STATE SUMMARY]\n{state_summary}\nChoose the next action."}
+    ]
+
+    action = None
+    reasoning = ""
+    overridden_by = ""
+    try:
+        raw = llm_call(DECISION_SYSTEM_PROMPT, decision_messages)
+        candidate = str(raw.get("action", "")).strip().lower()
+        reasoning = str(raw.get("reasoning", ""))
+        if candidate in DECISION_ACTIONS:
+            action = candidate
+    except Exception:
+        action = None
+
+    # 3. Validation fallback — invalid output or call failure keeps the
+    #    deterministic behavior instead of guessing.
+    if action is None:
+        fallback_map = {"faq": "faq", "qualify": "qualify", "escalated": "escalate", "summary": "summary"}
+        action = fallback_map.get(state["stage"], "faq")
+        overridden_by = "validation_fallback"
+        reasoning = reasoning or "LLM decision invalid or unavailable; kept deterministic stage."
+
+    # 4. Loop guard — same non-terminal action repeated too many times.
+    last_decision = state.get("last_decision", "")
+    repeat_count = state.get("decision_repeat_count", 0)
+    if action == last_decision and action not in ("escalate", "summary"):
+        repeat_count += 1
+    else:
+        repeat_count = 1
+
+    if repeat_count >= MAX_REPEAT_DECISIONS and action not in ("escalate", "summary"):
+        overridden_by = "turn_limit"
+        reasoning = f"'{action}' repeated {repeat_count} times without progress; forcing escalation."
+        action = "escalate"
+
+    log_decision(state["session_id"], action, overridden_by, reasoning)
+
+    stage_map = {"faq": "faq", "qualify": "qualify", "escalate": "escalated", "summary": "summary"}
+    return {
+        **state,
+        "stage": stage_map[action],
+        "last_decision": action,
+        "decision_repeat_count": repeat_count,
+    }
+
+
 def faq_node(state: AgentState) -> AgentState:
     """Stage 1: Answer inbound questions from SOP only."""
     user_msg = state["messages"][-1].content if hasattr(state["messages"][-1], "content") else state["messages"][-1].get("content", "")
@@ -347,6 +482,13 @@ def escalation_node(state: AgentState) -> AgentState:
 
 def summary_node(state: AgentState) -> AgentState:
     """Stage 4: Generate structured session summary."""
+    # NEW: even summary is behind the DistilBERT hard gate when autonomous
+    # routing sent us here directly — safety net in case qualification wasn't
+    # actually complete (e.g. decision node jumped early).
+    escalation = escalation_result(state)
+    if escalation:
+        return escalation
+
     history = format_messages(state)
     qual = state.get("qualification", {})
     gaps = state.get("sop_gaps", [])
@@ -428,6 +570,7 @@ def after_qualify_router(state: AgentState) -> str:
 def build_graph():
     graph = StateGraph(AgentState)
     graph.add_node("intent_classification", intent_classification_node)
+    graph.add_node("decision", decision_node)  # NEW
     graph.add_node("faq", faq_node)
     graph.add_node("qualify", qualify_node)
     graph.add_node("escalation", escalation_node)
@@ -440,7 +583,11 @@ def build_graph():
         "summary": "summary",
         END: END
     })
-    graph.add_conditional_edges("intent_classification", router, {
+    # NEW: intent_classification now always flows through decision before
+    # dispatching. When AUTONOMOUS_ROUTING is false, decision_node is a no-op
+    # passthrough, so behavior is byte-for-byte identical to before.
+    graph.add_edge("intent_classification", "decision")
+    graph.add_conditional_edges("decision", router, {
         "faq": "faq",
         "qualify": "qualify",
         "escalation": "escalation",
@@ -475,5 +622,7 @@ def get_initial_state(session_id: str = None) -> AgentState:
         "conversation_ended": False,
         "intent_label": "normal",
         "intent_confidence": 0.0,
-        "escalation_trigger": ""
+        "escalation_trigger": "",
+        "last_decision": "",
+        "decision_repeat_count": 0,
     }

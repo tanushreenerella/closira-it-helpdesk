@@ -1,6 +1,7 @@
 """FastAPI API for Closira. The browser UI is implemented in frontend/."""
 
 import json
+import os
 import uuid
 from contextlib import asynccontextmanager
 
@@ -18,7 +19,8 @@ async def lifespan(_app: FastAPI):
     yield
 
 app = FastAPI(title="Closira IT Helpdesk AI", lifespan=lifespan)
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"], allow_credentials=True,
+frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+app.add_middleware(CORSMiddleware, allow_origins=[frontend_url], allow_credentials=True,
                    allow_methods=["*"], allow_headers=["*"])
 
 WELCOME = ("Hi there! Welcome to Closira IT Helpdesk. I'm your AI Support Assistant. "
