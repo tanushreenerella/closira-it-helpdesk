@@ -280,7 +280,8 @@ def intent_classification_node(state: AgentState) -> AgentState:
     else:
         try:
             prediction = classify_employee_message(user_msg)
-        except Exception:
+        except Exception as exc:
+            print(f"[classifier] Failed to classify: {exc}")
             prediction = {"label": "normal", "confidence": 0.0, "degraded": True}
     return {**state, "intent_label": prediction["label"], "intent_confidence": prediction["confidence"],
             "intent_source_message": user_msg, "intent_degraded": prediction.get("degraded", False)}
