@@ -14,10 +14,10 @@ from groq import Groq
 from dotenv import load_dotenv
 try:
     from .nlp.classifier import classify_employee_message
-    from .database import record_escalation, save_final_summary
+    from .database import record_escalation, record_decision, save_final_summary, create_ticket
 except ImportError:
     from nlp.classifier import classify_employee_message
-    from database import record_escalation, save_final_summary
+    from database import record_escalation, record_decision, save_final_summary, create_ticket
 
 load_dotenv()
 
@@ -32,22 +32,37 @@ client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 MODEL = "openai/gpt-oss-120b"
 
 # ── Escalation log ───────────────────────────────────────────────────────────
-ESCALATION_CONFIDENCE_THRESHOLD = 0.60
+ESCALATION_CONFIDENCE_THRESHOLD = 0.8
 TRIVIAL_MESSAGES = {"hi", "hello", "hey", "hiya", "ok", "okay", "thanks", "thank you", "yes", "no", "yep", "nope"}
+# escalation_result() escalates before summary_node's Groq call ever classifies
+# severity, so there's nothing "already classified" to use yet — default to
+# the same neutral middle value the summary fallback uses.
+DEFAULT_ESCALATION_SEVERITY = "medium"
 
 def log_escalation(session_id: str, reason: str, conversation: list, trigger: str = "groq",
                    intent_label: str = "normal", intent_confidence: float = 0.0):
     record_escalation(session_id, reason, trigger, intent_label, intent_confidence)
 
 # ── NEW: Autonomous routing config ───────────────────────────────────────────
-AUTONOMOUS_ROUTING = os.environ.get("AUTONOMOUS_ROUTING", "false").strip().lower() == "true"
+AUTONOMOUS_ROUTING = os.environ.get("AUTONOMOUS_ROUTING", "true").strip().lower() == "true"
 DECISION_ACTIONS = ["faq", "qualify", "escalate", "summary"]
-MAX_REPEAT_DECISIONS = 3  # loop guard: force escalation after this many identical non-terminal decisions in a row
+MAX_REPEAT_DECISIONS = 5  # loop guard: force escalation after this many identical non-terminal decisions in a row
 
 DECISION_LOG_PATH = os.path.join(os.path.dirname(__file__), "decision_log.json")
 
 def log_decision(session_id: str, chosen: str, overridden_by: str, reason: str):
-    """Append a decision node event to decision_log.json (local file, mirrors escalation_log.json style)."""
+    """Persist a decision node event to Postgres (routing_decisions table).
+
+    Also appends to the local decision_log.json file for backward
+    compatibility during the transition — that file doesn't survive a
+    deployed host with an ephemeral filesystem, so Postgres is now the
+    durable copy. Neither write may ever break the graph.
+    """
+    try:
+        record_decision(session_id, chosen, overridden_by, reason)
+    except Exception:
+        pass
+
     entry = {
         "session_id": session_id,
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -75,11 +90,14 @@ class AgentState(TypedDict):
     stage: Literal["faq", "qualify", "escalated", "summary"]
     unanswered_count: int
     qualification: dict
+    qualification_started: bool
     escalation_reason: str
     sop_gaps: list
     conversation_ended: bool
     intent_label: str
     intent_confidence: float
+    intent_source_message: str
+    intent_degraded: bool
     escalation_trigger: str
     # NEW: loop guard for autonomous decision node
     last_decision: str
@@ -133,6 +151,8 @@ Valid actions (choose exactly one):
 - "escalate": hand off to a human IT support analyst
 - "summary": wrap up and produce a session summary (only appropriate once qualification is complete)
 
+If qualification is already complete (all 3 details have been collected — check the qualification progress in the state summary), you MUST choose "summary". Do NOT choose "faq" at this point, even if you believe you could now answer the original question — the workflow requires generating a structured handoff summary once qualification is complete, not returning to troubleshooting.
+
 Return ONLY valid JSON, no markdown fences:
 {
   "action": "<one of: faq, qualify, escalate, summary>",
@@ -181,7 +201,10 @@ def assistant_payload(result: dict) -> dict:
         "escalate": bool(result.get("escalate", False)),
         "escalation_reason": result.get("escalation_reason"),
         "stage_complete": bool(result.get("stage_complete", False)),
-        "sop_gap": bool(result.get("sop_gap", False))
+        "sop_gap": bool(result.get("sop_gap", False)),
+        "degraded": bool(result.get("degraded", False)),
+        "ticket_id": result.get("ticket_id"),
+        "ticket_severity": result.get("ticket_severity"),
     }
 
 def sentiment_check(text: str) -> tuple[bool, str]:
@@ -220,6 +243,16 @@ def repeated_failure_check(text: str) -> tuple[bool, str]:
             return True, f"Repeated failure signal detected: '{keyword}'"
     return False, ""
 
+def last_human_message(state: AgentState) -> str | None:
+    """Content of the most recent HUMAN message, regardless of what an
+    assistant node may have appended after it this turn."""
+    for m in reversed(state["messages"]):
+        role = m.type if hasattr(m, "type") else m.get("role", "user")
+        if role in ("human", "user"):
+            return m.content if hasattr(m, "content") else m.get("content", "")
+    return None
+
+
 def format_messages(state: AgentState) -> list:
     """Convert state messages to Groq format."""
     formatted = []
@@ -248,14 +281,40 @@ def intent_classification_node(state: AgentState) -> AgentState:
         try:
             prediction = classify_employee_message(user_msg)
         except Exception:
+            prediction = {"label": "normal", "confidence": 0.0, "degraded": True}
+    return {**state, "intent_label": prediction["label"], "intent_confidence": prediction["confidence"],
+            "intent_source_message": user_msg, "intent_degraded": prediction.get("degraded", False)}
+
+
+def classifier_escalation(state: AgentState) -> tuple[bool, str, str, str, str, float]:
+    """Translate the model intent into the existing escalation behavior.
+
+    Always evaluates against the most recent HUMAN message rather than
+    trusting state["intent_label"]/state["intent_confidence"] blindly. Those
+    are only valid if they were computed for THIS message — e.g. qualify_node
+    appends its own reply before summary_node's safety-net check runs, and a
+    stage can in principle be entered without intent_classification_node
+    having run first. When the cached label doesn't match the current human
+    message (tracked via intent_source_message), reclassify on the spot
+    instead of re-using a label left over from an earlier turn.
+    """
+    text = last_human_message(state)
+    if text is None:
+        return False, "", "", "", state.get("intent_label", "normal"), state.get("intent_confidence", 0.0)
+
+    if state.get("intent_source_message") == text:
+        label = state.get("intent_label", "normal")
+        confidence = state.get("intent_confidence", 0.0)
+    else:
+        if text.lower().strip() in TRIVIAL_MESSAGES:
             prediction = {"label": "normal", "confidence": 0.0}
-    return {**state, "intent_label": prediction["label"], "intent_confidence": prediction["confidence"]}
+        else:
+            try:
+                prediction = classify_employee_message(text)
+            except Exception:
+                prediction = {"label": "normal", "confidence": 0.0}
+        label, confidence = prediction["label"], prediction["confidence"]
 
-
-def classifier_escalation(state: AgentState, text: str) -> tuple[bool, str, str, str]:
-    """Translate the model intent into the existing escalation behavior."""
-    label = state.get("intent_label", "normal")
-    confidence = state.get("intent_confidence", 0.0)
     outcomes = {
         "frustrated": (
             "Frustrated sentiment detected by DistilBERT",
@@ -280,9 +339,9 @@ def classifier_escalation(state: AgentState, text: str) -> tuple[bool, str, str,
     keyword_escalation = is_negative or is_explicit or is_repeated_failure
 
     if model_escalation and keyword_escalation:
-        return True, model_reason, model_response, "both"
+        return True, model_reason, model_response, "both", label, confidence
     if model_escalation:
-        return True, model_reason, model_response, "distilbert"
+        return True, model_reason, model_response, "distilbert", label, confidence
     if keyword_escalation:
         return True, keyword_reason, (
             "I'm sorry this has been frustrating. I'm going to connect you with one of our team members right away."
@@ -290,21 +349,41 @@ def classifier_escalation(state: AgentState, text: str) -> tuple[bool, str, str,
             "I'm flagging this conversation for Human IT Support right away. An IT support analyst will follow up with you shortly."
             if is_explicit else
             "I can see the previous guidance has not resolved this. I'm escalating this to Human IT Support so they can take over."
-        ), "keyword"
-    return False, "", "", ""
+        ), "keyword", label, confidence
+    return False, "", "", "", label, confidence
 
 
 def escalation_result(state: AgentState):
-    message = state["messages"][-1]
-    text = message.content if hasattr(message, "content") else message.get("content", "")
-    should_escalate, reason, response, trigger = classifier_escalation(state, text)
+    should_escalate, reason, response, trigger, label, confidence = classifier_escalation(state)
     if not should_escalate:
         return None
-    result = assistant_payload({"response": response, "confidence": 1.0,
-                                "escalate": True, "escalation_reason": reason})
-    log_escalation(state["session_id"], reason, format_messages(state), trigger,
-                   state["intent_label"], state["intent_confidence"])
-    return {**state, "stage": "escalated", "escalation_reason": reason, "escalation_trigger": trigger,
+
+    qual = state.get("qualification", {})
+    ticket = None
+    try:
+        ticket = create_ticket(
+            session_id=state["session_id"],
+            severity=DEFAULT_ESCALATION_SEVERITY,
+            issue_summary=qual.get("answer_2") or reason,
+            employee=qual.get("answer_1"),
+            device_system=qual.get("answer_3"),
+        )
+    except Exception:
+        # Ticket creation must never break the escalation itself.
+        ticket = None
+
+    if ticket:
+        response = f"{response} Ticket #{ticket['ticket_id']} created — Priority: {DEFAULT_ESCALATION_SEVERITY.title()}."
+
+    result = assistant_payload({
+        "response": response, "confidence": 1.0,
+        "escalate": True, "escalation_reason": reason,
+        "ticket_id": ticket["ticket_id"] if ticket else None,
+        "ticket_severity": DEFAULT_ESCALATION_SEVERITY if ticket else None,
+    })
+    log_escalation(state["session_id"], reason, format_messages(state), trigger, label, confidence)
+    return {**state, "intent_label": label, "intent_confidence": confidence,
+            "stage": "escalated", "escalation_reason": reason, "escalation_trigger": trigger,
             "messages": state["messages"] + [AIMessage(content=json.dumps(result))]}
 
 
@@ -329,14 +408,12 @@ def decision_node(state: AgentState) -> AgentState:
     if not AUTONOMOUS_ROUTING:
         return state
 
-    message = state["messages"][-1]
-    text = message.content if hasattr(message, "content") else message.get("content", "")
-
     # 1. Hard override — DistilBERT / keyword escalation always wins.
-    should_escalate, reason, _response, trigger = classifier_escalation(state, text)
+    should_escalate, reason, _response, trigger, label, confidence = classifier_escalation(state)
     if should_escalate:
         log_decision(state["session_id"], "escalate", trigger, reason)
-        return {**state, "stage": "escalated", "last_decision": "escalate", "decision_repeat_count": 0}
+        return {**state, "intent_label": label, "intent_confidence": confidence,
+                "stage": "escalated", "last_decision": "escalate", "decision_repeat_count": 0}
 
     # 2. Ask the LLM to pick the next action.
     qual_progress = f"{len(state.get('qualification', {}))}/{len(QUALIFY_QUESTIONS)}"
@@ -429,8 +506,10 @@ def faq_node(state: AgentState) -> AgentState:
         }
 
     next_stage = "faq"
+    qualification_started = state.get("qualification_started", False)
     if not result.get("sop_gap") and user_msg.lower().strip() not in {"hi", "hello", "hey", "hiya"}:
         next_stage = "qualify"
+        qualification_started = True
         result["response"] = f"{result['response']} {QUALIFY_QUESTIONS[0]}"
 
     return {
@@ -438,6 +517,7 @@ def faq_node(state: AgentState) -> AgentState:
         "stage": next_stage,
         "unanswered_count": new_unanswered,
         "sop_gaps": new_gaps,
+        "qualification_started": qualification_started,
         "messages": state["messages"] + [AIMessage(content=json.dumps(result))]
     }
 
@@ -451,6 +531,47 @@ def qualify_node(state: AgentState) -> AgentState:
 
     new_qual = state["qualification"].copy()
     q_count = len(new_qual)
+
+    # Autonomous routing can send us straight into "qualify" before Question 1
+    # has ever actually been asked (normally faq_node asks it as part of its
+    # own reply before handing off). In that case the current message is the
+    # user's ORIGINAL question, not an answer to anything — ask Question 1
+    # instead of silently storing it as answer_1.
+    if not state.get("qualification_started") and q_count == 0:
+        result = assistant_payload({
+            "response": QUALIFY_QUESTIONS[0],
+            "confidence": 1.0,
+            "stage_complete": False
+        })
+        return {
+            **state,
+            "stage": "qualify",
+            "qualification_started": True,
+            "messages": state["messages"] + [AIMessage(content=json.dumps(result))]
+        }
+
+    # A reply that just repeats the original question or an earlier answer
+    # verbatim isn't actually answering the question just asked — accepting
+    # it as-is lets qualification "complete" on copy-pasted non-answers and
+    # rushes straight to a fabricated summary. Re-ask instead of advancing.
+    normalized = user_msg.strip().lower()
+    already_said = {a.strip().lower() for a in new_qual.values()} | {
+        (m.content if hasattr(m, "content") else m.get("content", "")).strip().lower()
+        for m in state["messages"][:-1]
+        if (m.type if hasattr(m, "type") else m.get("role", "")) in ("human", "user")
+    }
+    if q_count < len(QUALIFY_QUESTIONS) and normalized in already_said:
+        result = assistant_payload({
+            "response": f"That looks like something you already told me rather than an answer to this question: {QUALIFY_QUESTIONS[q_count]}",
+            "confidence": 1.0,
+            "stage_complete": False
+        })
+        return {
+            **state,
+            "stage": "qualify",
+            "messages": state["messages"] + [AIMessage(content=json.dumps(result))]
+        }
+
     if q_count < len(QUALIFY_QUESTIONS):
         new_qual[f"answer_{q_count + 1}"] = user_msg
 
@@ -498,6 +619,12 @@ def summary_node(state: AgentState) -> AgentState:
 Qualification data collected: {json.dumps(qual)}
 SOP gaps identified: {json.dumps(gaps)}
 
+Also classify the severity of the business impact described in the qualification answers, using one of: "low", "medium", "high", "critical".
+- low: minor inconvenience to a single person with an easy workaround. Examples: "my desktop wallpaper reset itself", "I'd like a second monitor".
+- medium: a single person's work is slowed or annoying but they can still get work done. Examples: "printer on my floor won't connect and I have to walk to another one", "email is slow to load".
+- high: blocks a person's core work, or affects multiple people. Examples: "I can't log into email at all and have a client deadline today", "the whole team's shared drive is inaccessible".
+- critical: anything security-related — compromised credentials, suspected phishing/malware, unauthorized access, or a suspected breach. Examples: "I think I clicked a phishing link and entered my password", "someone logged into my account from a location I don't recognize".
+
 Return ONLY valid JSON, no markdown fences:
 {{
   "employee_intent": "<one sentence describing what the employee needs>",
@@ -508,26 +635,50 @@ Return ONLY valid JSON, no markdown fences:
   }},
   "sop_gaps": ["<question 1>", "<question 2>"],
   "recommended_next_action": "<what the team should do next>",
+  "severity": "<one of: low, medium, high, critical>",
   "escalated": false,
   "escalation_reason": null
 }}"""
 
     groq_messages = [{"role": "system", "content": summary_prompt}] + history
-    response = client.chat.completions.create(
-        model=MODEL,
-        max_tokens=512,
-        messages=groq_messages
-    )
-    raw = response.choices[0].message.content.strip()
-    if raw.startswith("```"):
-        raw = raw.split("```")[1]
-        if raw.startswith("json"):
-            raw = raw[4:]
-    raw = raw.strip()
     try:
-        summary = json.loads(raw)
-    except Exception:
-        summary = {"raw_summary": raw}
+        response = client.chat.completions.create(
+            model=MODEL,
+            max_tokens=1024,
+            reasoning_effort="low",
+            messages=groq_messages
+        )
+        raw = (response.choices[0].message.content or "").strip()
+        if not raw:
+            raise ValueError("Empty response from Groq summary call")
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        raw = raw.strip()
+        try:
+            summary = json.loads(raw)
+        except Exception:
+            summary = {"raw_summary": raw}
+    except Exception as exc:
+        # Groq call failed outright (e.g. a 400 parse-failure error) or came
+        # back empty — fall back to a minimal safe summary built from what we
+        # already collected, rather than crashing the conversation.
+        print(f"[summary_node] Groq call failed, using fallback: {exc}")
+        summary = {
+            "employee_intent": qual.get("answer_2") or "Employee requested IT support; details unavailable due to a summary generation error.",
+            "key_details_collected": {
+                "employee": qual.get("answer_1"),
+                "issue": qual.get("answer_2"),
+                "device_system": qual.get("answer_3"),
+            },
+            "sop_gaps": gaps,
+            "recommended_next_action": "Summary generation failed — a human IT support analyst should review the raw conversation directly.",
+            "severity": "medium",
+            "escalated": False,
+            "escalation_reason": None,
+            "degraded": True,
+        }
 
     save_final_summary(state["session_id"], {
         "intent_label": state["intent_label"],
@@ -536,10 +687,35 @@ Return ONLY valid JSON, no markdown fences:
         **summary,
     })
 
+    severity = summary.get("severity") or "medium"
+    key_details = summary.get("key_details_collected") or {}
+    ticket = None
+    try:
+        ticket = create_ticket(
+            session_id=state["session_id"],
+            severity=severity,
+            issue_summary=key_details.get("issue") or qual.get("answer_2"),
+            employee=key_details.get("employee") or qual.get("answer_1"),
+            device_system=key_details.get("device_system") or qual.get("answer_3"),
+        )
+    except Exception:
+        # Ticket creation must never break summary generation.
+        ticket = None
+
+    response_text = "Session summary saved for Human IT Support. Thank you for using the AI Support Assistant."
+    if ticket:
+        response_text = (
+            f"Session summary saved for Human IT Support. Ticket #{ticket['ticket_id']} created "
+            f"— Priority: {severity.title()}. Thank you for using the AI Support Assistant."
+        )
+
     result = assistant_payload({
-        "response": "Session summary saved for Human IT Support. Thank you for using the AI Support Assistant.",
+        "response": response_text,
         "confidence": 1.0,
-        "stage_complete": True
+        "stage_complete": True,
+        "degraded": summary.get("degraded", False),
+        "ticket_id": ticket["ticket_id"] if ticket else None,
+        "ticket_severity": severity if ticket else None,
     })
 
     return {
@@ -617,11 +793,14 @@ def get_initial_state(session_id: str = None) -> AgentState:
         "stage": "faq",
         "unanswered_count": 0,
         "qualification": {},
+        "qualification_started": False,
         "escalation_reason": "",
         "sop_gaps": [],
         "conversation_ended": False,
         "intent_label": "normal",
         "intent_confidence": 0.0,
+        "intent_source_message": "",
+        "intent_degraded": False,
         "escalation_trigger": "",
         "last_decision": "",
         "decision_repeat_count": 0,

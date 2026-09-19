@@ -47,6 +47,34 @@ CREATE TABLE IF NOT EXISTS conversation_messages (
 
 CREATE INDEX IF NOT EXISTS conversation_messages_session_id_idx
     ON conversation_messages (session_id, message_index);
+
+CREATE TABLE IF NOT EXISTS routing_decisions (
+    id BIGSERIAL PRIMARY KEY,
+    session_id UUID NOT NULL REFERENCES employee_sessions(session_id) ON DELETE CASCADE,
+    timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    chosen_action TEXT NOT NULL,
+    overridden_by TEXT,
+    reason TEXT
+);
+
+CREATE INDEX IF NOT EXISTS routing_decisions_session_id_idx
+    ON routing_decisions (session_id, timestamp);
+
+CREATE SEQUENCE IF NOT EXISTS ticket_number_seq START 1001;
+
+CREATE TABLE IF NOT EXISTS tickets (
+    ticket_id TEXT PRIMARY KEY,
+    session_id UUID NOT NULL REFERENCES employee_sessions(session_id) ON DELETE CASCADE,
+    severity TEXT NOT NULL DEFAULT 'medium',
+    issue_summary TEXT,
+    employee TEXT,
+    device_system TEXT,
+    status TEXT NOT NULL DEFAULT 'Open',
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS tickets_session_id_idx
+    ON tickets (session_id);
 """
 
 
@@ -176,6 +204,34 @@ def record_escalation(session_id: str, reason: str, trigger: str, intent_label: 
             {"session_id": session_id, "reason": reason, "trigger": trigger,
              "intent_label": intent_label, "intent_confidence": intent_confidence},
         )
+
+
+def record_decision(session_id: str, chosen_action: str, overridden_by: str, reason: str) -> None:
+    """Insert one autonomous-routing decision event (mirrors log_decision's local JSON entry)."""
+    with connection() as conn:
+        conn.execute(
+            """INSERT INTO routing_decisions (session_id, chosen_action, overridden_by, reason)
+               VALUES (%(session_id)s, %(chosen_action)s, %(overridden_by)s, %(reason)s)""",
+            {"session_id": session_id, "chosen_action": chosen_action,
+             "overridden_by": overridden_by or None, "reason": reason},
+        )
+
+
+def create_ticket(session_id: str, severity: str, issue_summary: str | None,
+                   employee: str | None, device_system: str | None) -> dict[str, Any]:
+    """Insert a new support ticket and return the created row, including its
+    generated short readable ticket_id (e.g. "CLO-1001")."""
+    with connection() as conn:
+        row = conn.execute(
+            """INSERT INTO tickets (ticket_id, session_id, severity, issue_summary, employee, device_system)
+               VALUES ('CLO-' || nextval('ticket_number_seq')::text, %(session_id)s, %(severity)s,
+                       %(issue_summary)s, %(employee)s, %(device_system)s)
+               RETURNING ticket_id, session_id, severity, issue_summary, employee, device_system,
+                         status, created_at""",
+            {"session_id": session_id, "severity": severity, "issue_summary": issue_summary,
+             "employee": employee, "device_system": device_system},
+        ).fetchone()
+    return dict(row)
 
 
 def save_final_summary(session_id: str, summary: dict[str, Any]) -> None:

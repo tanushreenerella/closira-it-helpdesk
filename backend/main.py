@@ -37,7 +37,8 @@ def parse_agent_message(message) -> dict:
     return {"response": response or "I'm sorry, I didn't quite catch that. Could you rephrase?",
             "confidence": payload.get("confidence", 0.7), "escalate": payload.get("escalate", False),
             "escalation_reason": payload.get("escalation_reason"), "sop_gap": payload.get("sop_gap", False),
-            "stage_complete": payload.get("stage_complete", False)}
+            "stage_complete": payload.get("stage_complete", False), "degraded": payload.get("degraded", False),
+            "ticket_id": payload.get("ticket_id"), "ticket_severity": payload.get("ticket_severity")}
 
 
 @app.get("/health")
@@ -65,6 +66,9 @@ def session_payload(session: dict) -> dict:
                 "escalate": message["metadata"].get("escalate"),
                 "label": message["metadata"].get("predicted_escalation_label", session["intent_label"]),
                 "escalationReason": message["metadata"].get("escalation_reason"),
+                "degraded": message["metadata"].get("degraded", False),
+                "ticketId": message["metadata"].get("ticket_id"),
+                "ticketSeverity": message["metadata"].get("ticket_severity"),
             }
             for message in session["messages"]
         ],
@@ -145,6 +149,8 @@ async def websocket_endpoint(websocket: WebSocket):
             state = APP.invoke(state)
             persist_session(state)
             predicted_escalation_label = state.get("intent_label", "normal")
+            predicted_escalation_confidence = state.get("intent_confidence", 0.0)
+            predicted_escalation_degraded = state.get("intent_degraded", False)
             agent_messages = [m for m in state["messages"][before:]
                               if getattr(m, "type", None) == "ai" or getattr(m, "role", None) == "assistant"]
             if not agent_messages:
@@ -155,7 +161,12 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_json({
                     "type": "message", "message": result["response"], "stage": state["stage"],
                     "sop_gaps": state["sop_gaps"], "qualification": state["qualification"],
-                    "meta": {**result, "predicted_escalation_label": predicted_escalation_label},
+                    "meta": {
+                        **result,
+                        "predicted_escalation_label": predicted_escalation_label,
+                        "predicted_escalation_confidence": predicted_escalation_confidence,
+                        "predicted_escalation_degraded": predicted_escalation_degraded,
+                    },
                 })
                 if result["escalate"]:
                     await websocket.send_json({"type": "system", "message": f"🔴 Escalated to human team — Reason: {result['escalation_reason']}"})

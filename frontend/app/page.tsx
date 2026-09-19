@@ -2,8 +2,8 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
-type Message = { role: "ai" | "user" | "system"; text: string; confidence?: number; escalate?: boolean; label?: string; escalationReason?: string };
-type Meta = { confidence?: number; predicted_escalation_label?: string; escalation_reason?: string };
+type Message = { role: "ai" | "user" | "system"; text: string; confidence?: number; escalate?: boolean; label?: string; labelConfidence?: number; escalationReason?: string; degraded?: boolean; ticketId?: string; ticketSeverity?: string };
+type Meta = { confidence?: number; predicted_escalation_label?: string; predicted_escalation_confidence?: number; escalation_reason?: string; degraded?: boolean; predicted_escalation_degraded?: boolean; ticket_id?: string; ticket_severity?: string };
 type SessionSummary = { session_id: string; stage: string; preview: string; updated_at: string };
 type SessionState = { session_id: string; stage: string; sop_gaps: string[]; qualification: Record<string, string>; meta: Meta; messages: Message[] };
 
@@ -15,6 +15,7 @@ const SESSION_STORAGE_KEY = "closira.session_id";
 
 function confidenceTone(value = 0) { return value >= .75 ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : value >= .5 ? "bg-amber-50 text-amber-800 ring-amber-200" : "bg-red-50 text-red-800 ring-red-200"; }
 function stageTone(stage: string) { return stage === "escalated" ? "bg-red-50 text-red-800 ring-red-200" : stage === "summary" ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : stage === "qualify" ? "bg-amber-50 text-amber-800 ring-amber-200" : "bg-teal-50 text-teal-800 ring-teal-200"; }
+function severityTone(severity = "") { return severity === "critical" ? "bg-red-50 text-red-800 ring-red-200" : severity === "high" ? "bg-orange-50 text-orange-800 ring-orange-200" : severity === "low" ? "bg-slate-100 text-slate-600 ring-slate-200" : "bg-amber-50 text-amber-800 ring-amber-200"; }
 function Icon({ name }: { name: string }) { const icons: Record<string, string> = { shield: "◈", spark: "✦", user: "●", send: "↑", plus: "+", device: "▣" }; return <span aria-hidden="true">{icons[name]}</span>; }
 function Card({ title, children, warning = false }: { title: string; children: React.ReactNode; warning?: boolean }) { return <section className={`overflow-hidden rounded-xl border bg-white shadow-sm ${warning ? "border-red-200" : "border-slate-200"}`}><h2 className={`border-b px-4 py-3 text-[11px] font-semibold uppercase tracking-[.12em] ${warning ? "border-red-100 bg-red-50 text-red-800" : "border-slate-100 bg-slate-50 text-slate-600"}`}>{title}</h2><div className="p-4">{children}</div></section>; }
 
@@ -95,7 +96,11 @@ export default function Home() {
             confidence: payload.meta?.confidence,
             escalate: payload.meta?.escalate,
             label: payload.meta?.predicted_escalation_label,
+            labelConfidence: payload.meta?.predicted_escalation_confidence,
             escalationReason: payload.meta?.escalation_reason,
+            degraded: Boolean(payload.meta?.degraded || payload.meta?.predicted_escalation_degraded),
+            ticketId: payload.meta?.ticket_id,
+            ticketSeverity: payload.meta?.ticket_severity,
           },
         ]);
         setStage(payload.stage);
@@ -238,11 +243,23 @@ export default function Home() {
                   {message.role === "ai" && message.confidence !== undefined && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
                       <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${confidenceTone(message.confidence)}`}>
-                        Confidence {Math.round(message.confidence * 100)}%
+                        Reply confidence {Math.round(message.confidence * 100)}%
                       </span>
                       {message.label && (
                         <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold capitalize text-slate-600">
                           {message.label.replaceAll("_", " ")}
+                          {message.labelConfidence !== undefined && ` · Routing confidence ${Math.round(message.labelConfidence * 100)}%`}
+                        </span>
+                      )}
+                      {message.degraded && (
+                        <span className="inline-block rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
+                          Generated with reduced confidence
+                        </span>
+                      )}
+                      {message.ticketId && (
+                        <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${severityTone(message.ticketSeverity)}`}>
+                          Ticket #{message.ticketId}
+                          {message.ticketSeverity && ` · Priority: ${message.ticketSeverity[0].toUpperCase()}${message.ticketSeverity.slice(1)}`}
                         </span>
                       )}
                     </div>
@@ -308,7 +325,7 @@ export default function Home() {
 
             <Card title="AI classification">
               <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Confidence</span>
+                <span className="text-slate-500">Reply confidence</span>
                 <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${confidenceTone(meta.confidence)}`}>
                   {meta.confidence === undefined ? "—" : `${Math.round(meta.confidence * 100)}%`}
                 </span>
@@ -317,6 +334,12 @@ export default function Home() {
                 <span className="text-slate-500">Routing label</span>
                 <span className="max-w-[58%] rounded-full bg-slate-100 px-2.5 py-1 text-right text-xs font-medium capitalize text-slate-700">
                   {(meta.predicted_escalation_label || "normal").replaceAll("_", " ")}
+                </span>
+              </div>
+              <div className="mt-3 flex items-center justify-between text-sm">
+                <span className="text-slate-500">Routing confidence</span>
+                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${confidenceTone(meta.predicted_escalation_confidence)}`}>
+                  {meta.predicted_escalation_confidence === undefined ? "—" : `${Math.round(meta.predicted_escalation_confidence * 100)}%`}
                 </span>
               </div>
             </Card>
