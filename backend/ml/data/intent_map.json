@@ -1,0 +1,86 @@
+{
+  "_doc": "Source intent label -> Closira intent. Grouped as source -> target -> [source labels]. Labels listed under _drop are excluded. build_datasets.py fails if any source label is unmapped. complaint/feedback/appreciation come mostly from TWCS keyword rules (see twcs_rules.json); CLINC150 thank_you also feeds appreciation.",
+  "intents": [
+    "information_request",
+    "issue_report",
+    "action_request",
+    "complaint",
+    "feedback",
+    "appreciation",
+    "chit_chat"
+  ],
+  "max_per_source_label": 400,
+  "banking77": {
+    "issue_report": [
+      "Refund_not_showing_up", "balance_not_updated_after_bank_transfer",
+      "balance_not_updated_after_cheque_or_cash_deposit", "beneficiary_not_allowed", "card_arrival",
+      "card_not_working", "card_payment_fee_charged", "card_payment_not_recognised",
+      "card_payment_wrong_exchange_rate", "card_swallowed", "cash_withdrawal_not_recognised",
+      "compromised_card", "contactless_not_working", "declined_card_payment", "declined_cash_withdrawal",
+      "declined_transfer", "direct_debit_payment_not_recognised", "extra_charge_on_statement",
+      "failed_transfer", "lost_or_stolen_card", "lost_or_stolen_phone", "passcode_forgotten",
+      "pending_card_payment", "pending_cash_withdrawal", "pending_top_up", "pending_transfer",
+      "pin_blocked", "reverted_card_payment?", "top_up_failed", "top_up_reverted",
+      "transaction_charged_twice", "transfer_fee_charged", "transfer_not_received_by_recipient",
+      "unable_to_verify_identity", "virtual_card_not_working", "wrong_amount_of_cash_received",
+      "wrong_exchange_rate_for_cash_withdrawal"
+    ],
+    "action_request": [
+      "activate_my_card", "cancel_transfer", "change_pin", "edit_personal_details",
+      "get_disposable_virtual_card", "get_physical_card", "getting_spare_card", "getting_virtual_card",
+      "order_physical_card", "request_refund", "terminate_account", "verify_my_identity"
+    ],
+    "information_request": [
+      "age_limit", "apple_pay_or_google_pay", "atm_support", "automatic_top_up", "card_about_to_expire",
+      "card_acceptance", "card_delivery_estimate", "card_linking", "cash_withdrawal_charge",
+      "country_support", "disposable_card_limits", "exchange_charge", "exchange_rate", "exchange_via_app",
+      "fiat_currency_support", "receiving_money", "supported_cards_and_currencies",
+      "top_up_by_bank_transfer_charge", "top_up_by_card_charge", "top_up_by_cash_or_cheque",
+      "top_up_limits", "topping_up_by_card", "transfer_into_account", "transfer_timing",
+      "verify_source_of_funds", "verify_top_up", "visa_or_mastercard", "why_verify_identity"
+    ]
+  },
+  "clinc150": {
+    "chit_chat": [
+      "are_you_a_bot", "do_you_have_pets", "fun_fact", "goodbye", "greeting", "how_old_are_you",
+      "maybe", "meaning_of_life", "no", "repeat", "tell_joke", "what_are_your_hobbies",
+      "what_can_i_ask_you", "what_is_your_name", "where_are_you_from", "who_do_you_work_for",
+      "who_made_you", "yes"
+    ],
+    "appreciation": ["thank_you"],
+    "issue_report": [
+      "account_blocked", "card_declined", "damaged_card", "lost_luggage", "report_fraud", "report_lost_card"
+    ],
+    "action_request": [
+      "alarm", "book_flight", "book_hotel", "calendar_update", "cancel", "cancel_reservation", "car_rental",
+      "change_accent", "change_ai_name", "change_language", "change_speed", "change_user_name",
+      "change_volume", "confirm_reservation", "credit_limit_change", "find_phone", "flip_coin",
+      "freeze_account", "make_call", "new_card", "next_song", "order", "order_checks", "pay_bill",
+      "pin_change", "play_music", "pto_request", "redeem_rewards", "reminder", "reminder_update",
+      "reset_settings", "restaurant_reservation", "roll_dice", "rollover_401k", "schedule_maintenance",
+      "schedule_meeting", "share_location", "shopping_list_update", "smart_home", "sync_device", "text",
+      "timer", "todo_list_update", "transfer", "translate", "travel_notification", "uber",
+      "update_playlist", "whisper_mode"
+    ],
+    "information_request": [
+      "accept_reservations", "application_status", "apr", "balance", "bill_balance", "bill_due",
+      "calculator", "calendar", "calories", "carry_on", "cook_time", "credit_limit", "credit_score",
+      "current_location", "date", "definition", "direct_deposit", "directions", "distance",
+      "exchange_rate", "expiration_date", "flight_status", "food_last", "gas", "gas_type", "how_busy",
+      "improve_credit_score", "income", "ingredient_substitution", "ingredients_list", "insurance",
+      "insurance_change", "interest_rate", "international_fees", "international_visa", "jump_start",
+      "last_maintenance", "meal_suggestion", "measurement_conversion", "meeting_schedule", "min_payment",
+      "mpg", "next_holiday", "nutrition_info", "oil_change_how", "oil_change_when", "order_status",
+      "payday", "plug_type", "pto_balance", "pto_request_status", "pto_used", "recipe",
+      "replacement_card_duration", "restaurant_reviews", "restaurant_suggestion", "rewards_balance",
+      "routing", "shopping_list", "spelling", "spending_history", "taxes", "time", "timezone",
+      "tire_change", "tire_pressure", "todo_list", "traffic", "transactions", "travel_alert",
+      "travel_suggestion", "user_name", "vaccines", "w2", "weather", "what_song"
+    ],
+    "_drop": ["oos"]
+  },
+  "snips": {
+    "action_request": ["AddToPlaylist", "BookRestaurant", "PlayMusic", "RateBook"],
+    "information_request": ["GetWeather", "SearchCreativeWork", "SearchScreeningEvent"]
+  }
+}

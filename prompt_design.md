@@ -33,11 +33,14 @@ No secrets are requested during qualification.
 
 The assistant marks questions outside the SOP as `sop_gap`. The existing unanswered-question counter and escalation routing remain unchanged. The existing sentiment and explicit-human-request checks also remain unchanged.
 
-## LangGraph workflow
+## Turn pipeline
 
 ```text
-[Entry] → faq_node → qualify_node → summary_node → END
-              └────→ escalation_node → END
+run_turn(state, msg)
+  classify  -> ML intent + emotion -> risk          (backend/ml, router.risk_score)
+  route     -> faq | qualify | escalate | summary   (router.route; keyword rules are hard overrides)
+  handler   -> faq_handler (Groq writes the reply) | qualify_handler | escalate_handler | summary_handler
 ```
 
-The workflow retains its existing `AgentState`, node names, routers, WebSocket payloads, and summary generation flow.
+Groq only generates FAQ reply text (`response`, `confidence`, `sop_gap`) and the session summary. It never
+chooses a route; an `sop_gap` it reports is passed to the router as a rule flag.

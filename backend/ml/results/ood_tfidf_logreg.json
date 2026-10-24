@@ -1,0 +1,336 @@
+{
+  "model": "tfidf_logreg",
+  "n": 616,
+  "legacy_labels": {
+    "frustrated": 154,
+    "explicit_human_request": 154,
+    "repeated_confusion": 154,
+    "normal": 154
+  },
+  "escalation": {
+    "keyword_rules": {
+      "precision": 0.9870967741935484,
+      "recall": 0.33116883116883117,
+      "f1": 0.4959481361426256,
+      "accuracy": 0.49512987012987014,
+      "escalate_rate_by_legacy_label": {
+        "explicit_human_request": 0.6038961038961039,
+        "frustrated": 0.37012987012987014,
+        "normal": 0.012987012987012988,
+        "repeated_confusion": 0.01948051948051948
+      }
+    },
+    "model_only": {
+      "precision": 0.89375,
+      "recall": 0.30952380952380953,
+      "f1": 0.45980707395498394,
+      "accuracy": 0.45454545454545453,
+      "escalate_rate_by_legacy_label": {
+        "explicit_human_request": 0.045454545454545456,
+        "frustrated": 0.7012987012987013,
+        "normal": 0.11038961038961038,
+        "repeated_confusion": 0.18181818181818182
+      }
+    },
+    "router": {
+      "precision": 0.9299610894941635,
+      "recall": 0.5173160173160173,
+      "f1": 0.6648122392211405,
+      "accuracy": 0.6087662337662337,
+      "escalate_rate_by_legacy_label": {
+        "explicit_human_request": 0.6233766233766234,
+        "frustrated": 0.7402597402597403,
+        "normal": 0.11688311688311688,
+        "repeated_confusion": 0.18831168831168832
+      }
+    }
+  },
+  "label_alignment": {
+    "explicit_human_request": {
+      "n": 154,
+      "emotion_distribution": {
+        "neutral": 91,
+        "frustrated": 31,
+        "sad": 17,
+        "happy": 9,
+        "angry": 4,
+        "confused": 2
+      },
+      "intent_distribution": {
+        "issue_report": 75,
+        "action_request": 54,
+        "complaint": 8,
+        "information_request": 7,
+        "feedback": 5,
+        "chit_chat": 4,
+        "appreciation": 1
+      },
+      "emotion_consistent_rate": null,
+      "mean_risk": 0.4775493506493507
+    },
+    "frustrated": {
+      "n": 154,
+      "emotion_distribution": {
+        "neutral": 48,
+        "frustrated": 47,
+        "sad": 29,
+        "angry": 15,
+        "happy": 9,
+        "confused": 6
+      },
+      "intent_distribution": {
+        "complaint": 107,
+        "issue_report": 39,
+        "appreciation": 2,
+        "action_request": 2,
+        "information_request": 2,
+        "chit_chat": 1,
+        "feedback": 1
+      },
+      "emotion_consistent_rate": 0.4025974025974026,
+      "mean_risk": 0.7020272727272727
+    },
+    "normal": {
+      "n": 154,
+      "emotion_distribution": {
+        "neutral": 124,
+        "happy": 13,
+        "frustrated": 6,
+        "sad": 6,
+        "confused": 4,
+        "angry": 1
+      },
+      "intent_distribution": {
+        "issue_report": 55,
+        "information_request": 36,
+        "complaint": 30,
+        "action_request": 18,
+        "feedback": 11,
+        "appreciation": 3,
+        "chit_chat": 1
+      },
+      "emotion_consistent_rate": 0.9155844155844156,
+      "mean_risk": 0.41339675324675323
+    },
+    "repeated_confusion": {
+      "n": 154,
+      "emotion_distribution": {
+        "neutral": 92,
+        "frustrated": 37,
+        "sad": 12,
+        "happy": 8,
+        "confused": 5
+      },
+      "intent_distribution": {
+        "issue_report": 75,
+        "complaint": 34,
+        "appreciation": 18,
+        "feedback": 18,
+        "action_request": 4,
+        "chit_chat": 3,
+        "information_request": 2
+      },
+      "emotion_consistent_rate": 0.2727272727272727,
+      "mean_risk": 0.5076194805194805
+    }
+  },
+  "examples_missed_by_router": [
+    {
+      "text": "Please connect me to staff",
+      "label": "explicit_human_request",
+      "intent": "action_request",
+      "emotion": "angry",
+      "risk": 0.7094
+    },
+    {
+      "text": "You have not answered my question twice",
+      "label": "repeated_confusion",
+      "intent": "chit_chat",
+      "emotion": "frustrated",
+      "risk": 0.5082
+    },
+    {
+      "text": "That did not answer it again",
+      "label": "repeated_confusion",
+      "intent": "chit_chat",
+      "emotion": "frustrated",
+      "risk": 0.6497
+    },
+    {
+      "text": "Why are you repeating yourself?",
+      "label": "repeated_confusion",
+      "intent": "chit_chat",
+      "emotion": "neutral",
+      "risk": 0.3396
+    },
+    {
+      "text": "My account is locked after three attempts and no one will unlock it. I'm stuck and it's killing my productivity.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "neutral",
+      "risk": 0.5298
+    },
+    {
+      "text": "Why can\u2019t I log in? I\u2019ve entered my password correctly, but the system says it\u2019s wrong. This is frustrating.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "frustrated",
+      "risk": 0.6964
+    },
+    {
+      "text": "I\u2019ve tried all the suggested steps, still can\u2019t access my account. This delay is ruining my workday.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "frustrated",
+      "risk": 0.6188
+    },
+    {
+      "text": "My account is locked after a single failed login attempt\u2014no warning, no unlock option. This is outrageous!",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "sad",
+      "risk": 0.6168
+    },
+    {
+      "text": "I can't log into my work account today, and this is killing me\u2014I've been waiting for the reset link forever.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "sad",
+      "risk": 0.5406
+    },
+    {
+      "text": "The password reset email keeps bouncing back. I\u2019m frustrated that I can\u2019t get into my account at all.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "sad",
+      "risk": 0.6504
+    },
+    {
+      "text": "Every time I enter my username, it says 'access denied'. I've followed the steps, yet the system refuses me. I'm losing my patience.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "sad",
+      "risk": 0.5722
+    },
+    {
+      "text": "I reset my password twice, but the new login still fails. The helpdesk email keeps bouncing back. This is a major disruption to my work.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "neutral",
+      "risk": 0.4248
+    },
+    {
+      "text": "I\u2019m locked out of my account and the lockout period is longer than promised. I need this fixed immediately or I'll miss deadlines.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "neutral",
+      "risk": 0.4738
+    },
+    {
+      "text": "I can't log into my account after the system update. Every attempt fails and I'm missing a deadline.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "sad",
+      "risk": 0.5233
+    },
+    {
+      "text": "I'm locked out of my account for the third time this week. Why does IT keep messing this up?",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "confused",
+      "risk": 0.5393
+    }
+  ],
+  "examples_false_alarm": [
+    {
+      "text": "My workstation says I\u2019m not an authorized user for the file server.",
+      "intent": "complaint",
+      "emotion": "frustrated",
+      "risk": 0.7204
+    },
+    {
+      "text": "After the recent security patch, I'm unable to access the shared drive.",
+      "intent": "complaint",
+      "emotion": "neutral",
+      "risk": 0.5355
+    },
+    {
+      "text": "I\u2019m able to connect to the network, but the internet speed is unusually slow during video calls.",
+      "intent": "complaint",
+      "emotion": "neutral",
+      "risk": 0.5429
+    },
+    {
+      "text": "I just moved to the new office and the Wi\u2011Fi keeps disconnecting after a few minutes.",
+      "intent": "complaint",
+      "emotion": "neutral",
+      "risk": 0.5873
+    },
+    {
+      "text": "The laptop\u2019s network adapter appears disabled in device manager; it won\u2019t connect to the corporate VPN.",
+      "intent": "complaint",
+      "emotion": "neutral",
+      "risk": 0.6093
+    },
+    {
+      "text": "After a brief outage, my Wi\u2011Fi signal is weak in the conference room and I can\u2019t load the shared drive.",
+      "intent": "complaint",
+      "emotion": "angry",
+      "risk": 0.6829
+    },
+    {
+      "text": "My wireless connection drops every time I start a video call; the router seems fine on other devices.",
+      "intent": "complaint",
+      "emotion": "neutral",
+      "risk": 0.5597
+    },
+    {
+      "text": "The Wi\u2011Fi network is prompting for credentials repeatedly, even though I\u2019m already logged in.",
+      "intent": "complaint",
+      "emotion": "neutral",
+      "risk": 0.58
+    },
+    {
+      "text": "After a software update, my network adapter stopped detecting any wireless networks.",
+      "intent": "complaint",
+      "emotion": "neutral",
+      "risk": 0.6393
+    },
+    {
+      "text": "My laptop keeps dropping the Wi\u2011Fi after a short while. It reconnects but then disconnects again.",
+      "intent": "complaint",
+      "emotion": "neutral",
+      "risk": 0.6555
+    },
+    {
+      "text": "I can\u2019t connect to the VPN when I\u2019m on the new Wi\u2011Fi network, but it works on the old one.",
+      "intent": "complaint",
+      "emotion": "happy",
+      "risk": 0.501
+    },
+    {
+      "text": "My office Wi\u2011Fi keeps disconnecting at 3\u202fpm. I can still send emails but web browsing is spotty.",
+      "intent": "complaint",
+      "emotion": "neutral",
+      "risk": 0.5008
+    },
+    {
+      "text": "The VPN keeps disconnecting after a few minutes of inactivity while I work from home.",
+      "intent": "complaint",
+      "emotion": "neutral",
+      "risk": 0.5822
+    },
+    {
+      "text": "I accidentally clicked on a phishing link in an email; my account feels compromised.",
+      "intent": "action_request",
+      "emotion": "neutral",
+      "risk": 0.3067
+    },
+    {
+      "text": "My laptop\u2019s VPN connection keeps dropping after the update. I can\u2019t access the intranet. Any quick fix?",
+      "intent": "complaint",
+      "emotion": "neutral",
+      "risk": 0.5144
+    }
+  ]
+}

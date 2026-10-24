@@ -7,9 +7,8 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
-from langchain_core.messages import AIMessage, HumanMessage
 
-from .agent import APP, get_initial_state
+from .pipeline import get_initial_state, run_turn
 from .database import create_session, get_session, initialize_database, list_sessions, persist_session
 
 
@@ -26,9 +25,11 @@ app.add_middleware(CORSMiddleware, allow_origins=[frontend_url], allow_credentia
 WELCOME = ("Hi there! Welcome to Closira IT Helpdesk. I'm your AI Support Assistant. "
            "I can help with accounts, Wi-Fi and network, VPN, devices, email, and software access. How can I help you today?")
 
+CLASSIFICATION_KEYS = ("intent", "intent_confidence", "emotion", "emotion_confidence", "risk", "classifier_degraded")
 
-def parse_agent_message(message) -> dict:
-    content = message.content if hasattr(message, "content") else message.get("content", "")
+
+def parse_agent_message(message: dict) -> dict:
+    content = message.get("content", "")
     try:
         payload = json.loads(content)
     except Exception:
@@ -38,12 +39,21 @@ def parse_agent_message(message) -> dict:
             "confidence": payload.get("confidence", 0.7), "escalate": payload.get("escalate", False),
             "escalation_reason": payload.get("escalation_reason"), "sop_gap": payload.get("sop_gap", False),
             "stage_complete": payload.get("stage_complete", False), "degraded": payload.get("degraded", False),
-            "ticket_id": payload.get("ticket_id"), "ticket_severity": payload.get("ticket_severity")}
+            "ticket_id": payload.get("ticket_id"), "ticket_severity": payload.get("ticket_severity"),
+            **{key: payload.get(key) for key in CLASSIFICATION_KEYS}}
 
 
 @app.get("/health")
 async def health():
     return {"status": "ok"}
+
+
+def last_classification(session: dict) -> dict:
+    """Classification stamped on the most recent assistant message, if any."""
+    for message in reversed(session["messages"]):
+        if message["role"] != "user" and message["metadata"].get("intent") is not None:
+            return {key: message["metadata"].get(key) for key in CLASSIFICATION_KEYS}
+    return {"intent": session["intent_label"] or None, "intent_confidence": session["intent_confidence"]}
 
 
 def session_payload(session: dict) -> dict:
@@ -53,18 +63,18 @@ def session_payload(session: dict) -> dict:
         "stage": session["stage"],
         "sop_gaps": session["sop_gaps"],
         "qualification": session["qualification"],
-        "meta": {
-            "predicted_escalation_label": session["intent_label"],
-            "confidence": session["intent_confidence"],
-            "escalation_reason": session["escalation_reason"],
-        },
+        "meta": {**last_classification(session), "escalation_reason": session["escalation_reason"]},
         "messages": [
             {
                 "role": "user" if message["role"] == "user" else "ai",
                 "text": message["content"],
                 "confidence": message["metadata"].get("confidence"),
                 "escalate": message["metadata"].get("escalate"),
-                "label": message["metadata"].get("predicted_escalation_label", session["intent_label"]),
+                "intent": message["metadata"].get("intent"),
+                "intentConfidence": message["metadata"].get("intent_confidence"),
+                "emotion": message["metadata"].get("emotion"),
+                "emotionConfidence": message["metadata"].get("emotion_confidence"),
+                "risk": message["metadata"].get("risk"),
                 "escalationReason": message["metadata"].get("escalation_reason"),
                 "degraded": message["metadata"].get("degraded", False),
                 "ticketId": message["metadata"].get("ticket_id"),
@@ -76,23 +86,28 @@ def session_payload(session: dict) -> dict:
 
 
 def state_from_session(session: dict) -> dict:
-    """Rebuild the existing LangGraph state without changing its workflow."""
+    """Rebuild pipeline state from the stored session."""
     state = get_initial_state(str(session["session_id"]))
+    classification = last_classification(session)
     state.update({
         "stage": session["stage"],
         "unanswered_count": session["unanswered_count"],
         "qualification": session["qualification"],
+        "qualification_started": session["stage"] == "qualify" or bool(session["qualification"]),
         "escalation_reason": session["escalation_reason"] or "",
         "sop_gaps": session["sop_gaps"],
         "conversation_ended": session["conversation_ended"],
         "intent_label": session["intent_label"],
         "intent_confidence": session["intent_confidence"],
+        "emotion_label": classification.get("emotion") or "neutral",
+        "emotion_confidence": classification.get("emotion_confidence") or 0.0,
+        "risk": classification.get("risk") or 0.0,
         "escalation_trigger": session["escalation_trigger"] or "",
     })
     state["messages"] = [
-        HumanMessage(content=message["content"])
+        {"role": "user", "content": message["content"]}
         if message["role"] == "user"
-        else AIMessage(content=json.dumps({"response": message["content"], **message["metadata"]}))
+        else {"role": "assistant", "content": json.dumps({"response": message["content"], **message["metadata"]})}
         for message in session["messages"]
     ]
     return state
@@ -144,15 +159,10 @@ async def websocket_endpoint(websocket: WebSocket):
             user_message = data.get("message", "").strip()
             if not user_message:
                 continue
-            state["messages"].append(HumanMessage(content=user_message))
-            before = len(state["messages"])
-            state = APP.invoke(state)
+            before = len(state["messages"]) + 1  # run_turn appends the user message first
+            state = run_turn(state, user_message)
             persist_session(state)
-            predicted_escalation_label = state.get("intent_label", "normal")
-            predicted_escalation_confidence = state.get("intent_confidence", 0.0)
-            predicted_escalation_degraded = state.get("intent_degraded", False)
-            agent_messages = [m for m in state["messages"][before:]
-                              if getattr(m, "type", None) == "ai" or getattr(m, "role", None) == "assistant"]
+            agent_messages = [m for m in state["messages"][before:] if m.get("role") == "assistant"]
             if not agent_messages:
                 await websocket.send_json({"type": "system", "message": "This conversation has already reached a handoff stage. Please start a new session to continue testing."})
                 continue
@@ -161,12 +171,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 await websocket.send_json({
                     "type": "message", "message": result["response"], "stage": state["stage"],
                     "sop_gaps": state["sop_gaps"], "qualification": state["qualification"],
-                    "meta": {
-                        **result,
-                        "predicted_escalation_label": predicted_escalation_label,
-                        "predicted_escalation_confidence": predicted_escalation_confidence,
-                        "predicted_escalation_degraded": predicted_escalation_degraded,
-                    },
+                    "meta": result,
                 })
                 if result["escalate"]:
                     await websocket.send_json({"type": "system", "message": f"🔴 Escalated to human team — Reason: {result['escalation_reason']}"})

@@ -1,0 +1,35 @@
+{
+  "conversations": 10042,
+  "customer_turns": 89372,
+  "splits": {
+    "test": {
+      "conversations": 1003,
+      "turns": 8889,
+      "positive_turns": 116,
+      "conversations_with_positive": 87
+    },
+    "train": {
+      "conversations": 8023,
+      "turns": 71292,
+      "positive_turns": 836,
+      "conversations_with_positive": 642
+    },
+    "val": {
+      "conversations": 1016,
+      "turns": 9191,
+      "positive_turns": 108,
+      "conversations_with_positive": 84
+    }
+  },
+  "rule_counts": {
+    "agent_escalation": 215,
+    "repeated_failure": 429,
+    "explicit_human": 141,
+    "anger": 332
+  },
+  "positive_rate": 0.011860537976099896,
+  "review_export": {
+    "conversations": 300,
+    "rows": 5723
+  }
+}

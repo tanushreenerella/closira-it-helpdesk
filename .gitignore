@@ -30,10 +30,13 @@ htmlcov/
 # =========================
 # Backend generated files
 # =========================
-backend/nlp/dataset.csv
-backend/nlp/baseline_f1.txt
-backend/nlp/bert_model/
-backend/nlp/model/
+backend/legacy/nlp/dataset.csv
+backend/legacy/nlp/baseline_f1.txt
+backend/legacy/nlp/bert_model/
+backend/legacy/nlp/model/
+backend/ml/data/raw/
+backend/ml/data/processed/
+backend/ml/artifacts/
 backend/escalation_log.json
 backend/summary_*.json
 

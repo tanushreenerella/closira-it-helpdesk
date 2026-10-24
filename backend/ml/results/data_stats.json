@@ -1,0 +1,113 @@
+{
+  "twcs_weak_labels": {
+    "appreciation": 4000,
+    "complaint": 4000,
+    "feedback": 3726
+  },
+  "intent_dedupe": {
+    "rows_before": 50109,
+    "conflicting_texts_dropped": 7,
+    "rows_after": 49818
+  },
+  "intent_by_source": {
+    "banking77/action_request": 1966,
+    "banking77/information_request": 4386,
+    "banking77/issue_report": 6666,
+    "clinc150/action_request": 7335,
+    "clinc150/appreciation": 139,
+    "clinc150/chit_chat": 2657,
+    "clinc150/information_request": 11394,
+    "clinc150/issue_report": 890,
+    "snips/action_request": 1597,
+    "snips/information_request": 1189,
+    "twcs/appreciation": 3881,
+    "twcs/complaint": 3996,
+    "twcs/feedback": 3722
+  },
+  "intent_splits": {
+    "train": {
+      "rows": 39854,
+      "labels": {
+        "information_request": 13575,
+        "action_request": 8718,
+        "issue_report": 6045,
+        "complaint": 3197,
+        "feedback": 2977,
+        "appreciation": 3216,
+        "chit_chat": 2126
+      }
+    },
+    "val": {
+      "rows": 4982,
+      "labels": {
+        "information_request": 1697,
+        "action_request": 1090,
+        "issue_report": 756,
+        "feedback": 372,
+        "complaint": 400,
+        "chit_chat": 265,
+        "appreciation": 402
+      }
+    },
+    "test": {
+      "rows": 4982,
+      "labels": {
+        "complaint": 399,
+        "information_request": 1697,
+        "action_request": 1090,
+        "appreciation": 402,
+        "issue_report": 755,
+        "feedback": 373,
+        "chit_chat": 266
+      }
+    }
+  },
+  "emotion_before_downsample": {
+    "neutral": 16021,
+    "angry": 1900,
+    "frustrated": 3618,
+    "happy": 15694,
+    "confused": 1057,
+    "sad": 2375
+  },
+  "emotion_dedupe": {
+    "rows_before": 40662,
+    "conflicting_texts_dropped": 63,
+    "rows_after": 39974
+  },
+  "emotion_splits": {
+    "train": {
+      "rows": 31979,
+      "labels": {
+        "happy": 12211,
+        "neutral": 12669,
+        "angry": 1498,
+        "confused": 838,
+        "frustrated": 2875,
+        "sad": 1888
+      }
+    },
+    "val": {
+      "rows": 3997,
+      "labels": {
+        "angry": 188,
+        "neutral": 1583,
+        "happy": 1526,
+        "sad": 236,
+        "frustrated": 359,
+        "confused": 105
+      }
+    },
+    "test": {
+      "rows": 3998,
+      "labels": {
+        "neutral": 1584,
+        "frustrated": 360,
+        "happy": 1527,
+        "confused": 104,
+        "sad": 236,
+        "angry": 187
+      }
+    }
+  }
+}

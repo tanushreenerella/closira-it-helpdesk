@@ -1,0 +1,34 @@
+{
+  "_doc": "Keyword rules that weakly label inbound TWCS customer tweets as complaint / feedback / appreciation. Patterns are case-insensitive regexes matched on cleaned text (handles and URLs removed). A tweet matching more than one class, or any 'exclude' pattern, is dropped. Labels are noisy by construction — review/twcs_review_200.csv holds a 200-tweet sample for manual checking. When processed/twcs_labelled.csv.gz exists, these rules are re-applied to the cached tweets — exact only for rules that got stricter; delete the cache after loosening a rule.",
+  "max_per_class": 4000,
+  "min_words": 4,
+  "rules": {
+    "complaint": [
+      "\\bworst\\b", "\\bterrible\\b", "\\bawful\\b", "\\bhorrible\\b", "\\bridiculous\\b",
+      "\\bunacceptable\\b", "\\bdisgusted\\b", "\\bdisgusting\\b", "\\bpathetic\\b", "\\buseless\\b",
+      "\\bfed up\\b", "\\bsick of\\b", "\\brip ?off\\b", "\\bnever again\\b", "\\bshame on you\\b",
+      "\\bthanks for nothing\\b", "\\bso disappointed\\b", "\\bvery disappointed\\b", "\\bpoor service\\b",
+      "\\bterrible service\\b", "\\bworst customer service\\b"
+    ],
+    "feedback": [
+      "\\byou should (add|make|have|let|allow|consider|offer|bring)\\b", "\\bwould be (nice|great|cool|awesome) if\\b",
+      "\\bplease (add|bring back|make it|consider|allow)\\b", "\\bfeature request\\b",
+      "\\b(my|some|quick|a|small|honest) (feedback|suggestion)\\b", "\\b(feedback|suggestion):",
+      "\\bi suggest\\b", "\\bwhy don'?t you\\b", "\\bi wish (you|there was|it)\\b", "\\bconsider adding\\b",
+      "\\bit'?d be (nice|great) if\\b", "\\bcan you guys (add|make)\\b"
+    ],
+    "appreciation": [
+      "\\bthank you so much\\b", "\\bthanks so much\\b","\\bmuch appreciated\\b",
+      "\\bi appreciate\\b", "\\breally appreciate\\b", "\\bgreat (customer )?service\\b",
+      "\\bexcellent (customer )?service\\b", "\\byou guys rock\\b", "\\byou('re| are) (the best|awesome|amazing)\\b",
+      "\\bamazing (customer )?service\\b", "\\bthanks for (the|your) (help|quick|fast|great)\\b",
+      "\\bthank you for (the|your) (help|quick|fast|great)\\b", "\\blove (you guys|this app|your service)\\b",
+      "\\bkudos\\b", "\\bshout ?out to\\b"
+    ]
+  },
+  "exclude": [
+    "\\?", "\\bnot\\b.{0,15}\\b(great|amazing|appreciate)", "\\bthanks for nothing\\b.*\\b(thank|appreciate)",
+    "\\bthanks a lot\\b", "\\bthanks for reaching out\\b", "\\bwe recommend\\b", "^\\s*we('ve| have| are|'re)\\b",
+    "\\bwaiting for (your |any )?feedback\\b"
+  ]
+}
