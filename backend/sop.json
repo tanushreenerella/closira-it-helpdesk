@@ -15,7 +15,8 @@
     "VPN connectivity",
     "Managed device problems",
     "Email issues",
-    "Approved software and access requests"
+    "Approved software and access requests",
+    "Application crashes, freezes, and apps that won't open"
   ],
   "troubleshooting_playbooks": [
     {
@@ -97,6 +98,24 @@
       "self_help_steps": [
         "Make sure you are on a managed company device.",
         "Check that the application is on the approved software list — unapproved software and access changes need approval from Human IT Support."
+      ]
+    },
+    {
+      "issue": "Application crash",
+      "steps": [
+        "Confirm which application crashes, freezes, or will not open, and when it happens.",
+        "Ask the employee to restart the application and then the device.",
+        "Have the employee start the application in safe mode (for Outlook: outlook.exe /safe) to rule out add-ins.",
+        "Check for pending application and operating system updates.",
+        "Repair Microsoft Office from Settings > Apps if an Office application is affected.",
+        "Escalate if the application still crashes after a repair, or if several employees are affected."
+      ],
+      "self_help_steps": [
+        "Close the application completely and open it again.",
+        "Restart your device, then try the application again.",
+        "Start the application in safe mode to rule out add-ins — for Outlook, press Windows + R, type outlook.exe /safe and press Enter.",
+        "Check for updates (Windows Update, and the app's own update option) and install any that are pending.",
+        "For Microsoft Office apps, run a repair: Settings > Apps > Installed apps > Microsoft 365 > Modify > Quick Repair."
       ]
     }
   ],

@@ -468,7 +468,8 @@ def test_tags_only_on_first_reply_of_a_turn(stubs):
     assert {"intent", "emotion", "risk"} <= bot[0].keys()
     assert not {"intent", "emotion", "risk"} & bot[1].keys()
 
-    state, bot = turn(to_fix_check(stubs, "g2"), "no")  # "thanks, raising a ticket" + requester question
+    # "thanks, raising a ticket" + requester question
+    state, bot = turn(to_fix_check(stubs, "g2"), "it did not help at all")
     assert "intent" in bot[0] and "intent" not in bot[1]
 
 
@@ -497,7 +498,7 @@ def test_selected_steps_can_come_from_another_playbook(stubs):
 
 
 @pytest.mark.parametrize("bad", [{"step_ids": [999, -1, "0", True]}, {"step_ids": "all"}, {"steps": ["Reinstall Windows"]},
-                                 {"step_ids": []}, None])
+                                 None])
 def test_invalid_step_selection_falls_back_to_category_steps(stubs, bad):
     stubs["select"] = bad
     state = to_fix_check(stubs, "e3")
@@ -509,11 +510,13 @@ def test_invalid_step_selection_falls_back_to_category_steps(stubs, bad):
     assert all(step in all_sop_self_help_steps() for step in numbered), "never an invented step"
 
 
-def test_no_error_message_skips_groq_selection(stubs):
+def test_selector_runs_on_the_problem_even_without_an_error(stubs):
+    # (was: no Groq call without an error — relevance now needs the problem too)
+    stubs["select"] = {"step_ids": [0]}
     state = to_fix_check(stubs, "e4", extraction={**VPN_NO_REQ, "error_message": "none"})
-    assert stubs["select_calls"] == []
-    for step in pipeline.PLAYBOOKS["vpn"]["self_help_steps"]:
-        assert step in replies(state)[-1]["response"]
+    assert len(stubs["select_calls"]) == 1
+    assert "VPN connects then drops" in stubs["select_calls"][0]
+    assert pipeline.PLAYBOOKS["vpn"]["self_help_steps"][0] in replies(state)[-1]["response"]
 
 
 def test_step_selection_failure_falls_back(stubs, monkeypatch):
@@ -617,3 +620,124 @@ def test_ticket_request_while_requester_pending_counts_as_skip(stubs):
     assert len(stubs["tickets"]) == 1 and stubs["tickets"][0]["employee"] is None
     assert REQ_Q not in bot[-1]["response"]
     assert state["conversation_ended"] is True
+
+
+# ── Browser test: Outlook crash case ─────────────────────────────────────────
+# The exact turns from the browser session that went wrong: the device was
+# re-asked, and unrelated software-access steps were shown.
+
+OUTLOOK_DETAILS = ("utlook isn’t opening on my Windows laptop. Whenever I try to launch it, "
+                   "it gets stuck on the loading screen and then crashes.")
+
+
+def outlook_session(stubs):
+    state, _ = turn(pipeline.get_initial_state("ol"), "Software & Access")
+    assert state["pending_slot"] == "problem_details"
+    # Groq extraction misses the device buried in the long message
+    stubs["extract"] = [{"problem_details": "Outlook gets stuck on the loading screen and then crashes"}]
+    state, bot = turn(state, OUTLOOK_DETAILS)
+    return state, bot
+
+
+def test_device_in_long_message_is_extracted_and_not_re_asked(stubs):
+    state, bot = outlook_session(stubs)
+    assert "Windows" in state["qualification"]["device_os"] and "laptop" in state["qualification"]["device_os"]
+    for answer in ("There’s no error message. Outlook just gets stuck on the loading screen and then closes unexpectedly.",
+                   "completely blocked"):
+        state, bot = turn(state, answer)
+        assert all(r["response"] != pipeline.SLOT_QUESTIONS["device_os"]["software"] for r in bot)
+    assert state["qualification"]["error_message"] == "none"
+    assert state["stage"] == "troubleshoot"
+    asked = " ".join(r["response"] for r in replies(state))
+    assert "Which device" not in asked
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("my Windows laptop", "Windows laptop"), ("HP running windows 11", "HP windows 11"),
+    ("on my MacBook Pro", "MacBook Pro"), ("Lenovo ThinkPad", "Lenovo ThinkPad"), ("my phone", "phone"),
+])
+def test_device_os_keyword_fallback(text, expected):
+    assert pipeline.keyword_slots(text)["device_os"] == expected
+
+
+def test_all_slots_extracted_from_every_message_even_when_another_is_pending(stubs, monkeypatch):
+    monkeypatch.setattr(pipeline, "llm_extract", lambda s, m: (_ for _ in ()).throw(RuntimeError("down")))
+    stubs["extract"] = []
+    state, _ = turn(pipeline.get_initial_state("all"), "VPN")
+    state, _ = turn(state, "it drops every 10 minutes with error 809 on my Dell laptop and I can't do any work at all")
+    q = state["qualification"]
+    assert q["error_message"] == "error 809"
+    assert q["device_os"] == "Dell laptop"
+    assert q["impact"]
+    assert state["stage"] == "troubleshoot", "nothing left to ask"
+
+
+def test_crash_problem_routes_to_app_crash_playbook(stubs):
+    state, _ = outlook_session(stubs)
+    assert pipeline.playbook_key(state) == "app_crash"
+    for answer in ("There’s no error message.", "completely blocked"):
+        state, _ = turn(state, answer)
+    text = replies(state)[-1]["response"]
+    assert "outlook.exe /safe" in text
+    assert "approved software list" not in text, "never the unrelated software-access steps"
+
+
+@pytest.mark.parametrize("category,problem,key", [
+    ("software", "Teams freezes when I share my screen", "app_crash"),
+    ("email", "Outlook won't open", "app_crash"),
+    ("device", "Excel keeps crashing on my laptop", "app_crash"),
+    ("device", "my laptop freezes and won't turn on", "device"),
+    ("software", "I need access to Jira", "software"),
+    ("vpn", "VPN connects then drops", "vpn"),
+])
+def test_playbook_routing(category, problem, key):
+    state = {**pipeline.get_initial_state("pk"), "qualification": {"issue_category": category, "problem_details": problem}}
+    assert pipeline.playbook_key(state) == key
+
+
+def test_app_crash_playbook_is_in_sop():
+    steps = " ".join(pipeline.PLAYBOOKS["app_crash"]["self_help_steps"])
+    for needle in ("open it again", "Restart your device", "outlook.exe /safe", "updates", "Quick Repair"):
+        assert needle in steps
+
+
+def test_no_relevant_steps_skips_fix_check_and_goes_to_requester(stubs):
+    stubs["select"] = {"step_ids": []}  # Groq: none of the SOP steps apply
+    state = to_fix_check(stubs, "nr1")
+    bot = replies(state)
+    assert state["stage"] != "troubleshoot"
+    assert not any(r["shows_steps"] for r in bot)
+    assert "None of our SOP self-help steps apply" in bot[-2]["response"]
+    assert bot[-1]["response"] == REQ_Q
+    assert all(pipeline.FIX_CHECK not in r["response"] for r in bot)
+    state, _ = turn(state, "skip")
+    assert len(stubs["tickets"]) == 1
+
+
+# ── No tags on messages that weren't classified ──────────────────────────────
+
+@pytest.mark.parametrize("reply_text", ["no", "No.", "yes!", "ok"])
+def test_trivial_reply_gets_no_tags(stubs, reply_text):
+    state = to_fix_check(stubs, "tg1")
+    state, bot = turn(state, reply_text)
+    assert not {"intent", "emotion", "risk"} & bot[0].keys()
+
+
+def test_degraded_classifier_gets_no_tags_but_flags_degraded(stubs, monkeypatch):
+    def boom(text):
+        raise RuntimeError("no model")
+    monkeypatch.setattr(pipeline, "classify_message", boom)
+    state, bot = turn(pipeline.get_initial_state("tg2"), "my VPN keeps dropping")
+    assert not {"intent", "emotion", "risk"} & bot[0].keys()
+    assert bot[0]["classifier_degraded"] is True
+
+
+def test_zero_confidence_prediction_gets_no_tags(stubs):
+    stubs["prediction"] = prediction("issue_report", "neutral", p=0.0, emotion_p=0.0)
+    state, bot = turn(pipeline.get_initial_state("tg3"), "my VPN keeps dropping")
+    assert "intent" not in bot[0]
+
+
+def test_classified_message_keeps_tags(stubs):
+    state, bot = turn(pipeline.get_initial_state("tg4"), "my VPN keeps dropping")
+    assert {"intent", "emotion", "risk"} <= bot[0].keys()

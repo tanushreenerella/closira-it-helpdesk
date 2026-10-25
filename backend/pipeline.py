@@ -30,13 +30,13 @@ from dotenv import load_dotenv
 try:
     from .ml.inference import classify_message
     from .router import (route, risk_score, emotion_only_risk, keyword_flags, sentiment_check, explicit_escalation, repeated_failure_check,
-                         security_check, ticket_severity, impact_level, NON_SUPPORT_INTENTS, RISK_ESCALATE_THRESHOLD,
+                         security_check, ticket_severity, impact_level, IMPACT_BLOCKED, NON_SUPPORT_INTENTS, RISK_ESCALATE_THRESHOLD,
                          COMPLAINT_ESCALATE_THRESHOLD, INTENT_CONFIDENCE_THRESHOLD, UNCERTAIN_INTENT, SLOT_ANSWER_INTENT)
     from .database import record_escalation, record_decision, save_final_summary, create_ticket
 except ImportError:
     from ml.inference import classify_message
     from router import (route, risk_score, emotion_only_risk, keyword_flags, sentiment_check, explicit_escalation, repeated_failure_check,
-                        security_check, ticket_severity, impact_level, NON_SUPPORT_INTENTS, RISK_ESCALATE_THRESHOLD,
+                        security_check, ticket_severity, impact_level, IMPACT_BLOCKED, NON_SUPPORT_INTENTS, RISK_ESCALATE_THRESHOLD,
                         COMPLAINT_ESCALATE_THRESHOLD, INTENT_CONFIDENCE_THRESHOLD, UNCERTAIN_INTENT, SLOT_ANSWER_INTENT)
     from database import record_escalation, record_decision, save_final_summary, create_ticket
 
@@ -53,7 +53,9 @@ client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
 MODEL = "openai/gpt-oss-120b"
 
 # ── Config ───────────────────────────────────────────────────────────────────
-TRIVIAL_MESSAGES = {"hi", "hello", "hey", "hiya", "ok", "okay", "thanks", "thank you", "yes", "no", "yep", "nope"}
+# Compared after lowercasing and dropping punctuation ("No." / "yes!" count).
+TRIVIAL_MESSAGES = {"hi", "hello", "hey", "hiya", "ok", "okay", "thanks", "thank you", "yes", "no", "yep", "nope",
+                    "yeah", "nah", "sure", "none", "skip", "n a"}
 GREETINGS = {"hi", "hello", "hey", "hiya"}
 MAX_REPEAT_DECISIONS = 5  # loop guard: force escalation after this many identical non-terminal routes in a row
 
@@ -80,7 +82,25 @@ CATEGORIES = {
     "other": None,
 }
 PLAYBOOKS = {key: next((p for p in SOP["troubleshooting_playbooks"] if p["issue"] == name), None)
-             for key, name in CATEGORIES.items()}
+             for key, name in {**CATEGORIES, "app_crash": "Application crash"}.items()}
+
+# Crash / freeze / won't-open problems in an application go to the
+# "Application crash" playbook instead of their category's.
+CRASH_PROBLEM = re.compile(
+    r"\b(crash\w*|freez\w*|frozen|hangs|hanging|not responding|keeps closing|closes (unexpectedly|by itself|on its own)|"
+    r"(won'?t|will not|doesn'?t|does not|can'?t) (open|launch|start|load)|(isn'?t|is not|not) (opening|launching|starting|loading)|"
+    r"stuck (on|at) (the )?(loading|splash|startup|start-?up))", re.I)
+APP_NAMES = re.compile(r"\b(outlook|teams|excel|word|powerpoint|onenote|chrome|edge|firefox|zoom|slack|onedrive|"
+                       r"acrobat|sap|app|apps|application|program|software)\b", re.I)
+
+# Deterministic fallbacks, applied to every message for any slot still empty
+# (Groq extraction can miss a detail buried in a long message).
+DEVICE_OS = re.compile(
+    r"\b(windows( ?(10|11|7))?|mac ?os|macbook( (air|pro))?|mac|imac|linux|ubuntu|chromebook|chrome ?os|ios|ipad|iphone|"
+    r"android|hp|dell|lenovo|thinkpad|asus|acer|surface|laptop|desktop|pc|phone|tablet)\b", re.I)
+NO_ERROR = re.compile(r"\b(no error( message| code)?s?|there'?s no error|there is no error|without (any )?errors?|"
+                      r"no (message|warning) (at all|shows|appears))\b", re.I)
+ERROR_CODE = re.compile(r"\b(0x[0-9a-f]{4,}|error( code)?[:#\s]*\d{2,}|code[:#\s]*\d{3,})\b", re.I)
 
 # Fallback category detection when extraction doesn't return one. Checked in order.
 CATEGORY_KEYWORDS = [
@@ -215,6 +235,7 @@ class AgentState(TypedDict):
     impact_level: str            # blocked | degraded | minor | ""
     troubleshoot_reasked: bool
     steps_shown: bool            # SOP troubleshooting steps were already shown this session
+    classified: bool             # the latest message was really scored by the model (drives UI tags)
     ready_for_ticket: bool
     escalation_reason: str
     sop_gaps: list
@@ -256,7 +277,7 @@ RESPONSE FORMAT (always return valid JSON, nothing else, no markdown fences):
 }}
 """
 
-SELECT_STEPS_PROMPT = """Pick the SOP self-help steps most relevant to the employee's error. You do not reply to the employee.
+SELECT_STEPS_PROMPT = """Pick the SOP self-help steps that could actually fix the employee's problem. You do not reply to the employee.
 
 Issue category: {category}
 Problem: {problem}
@@ -267,7 +288,7 @@ Candidate steps (id: [playbook] step):
 
 Return ONLY valid JSON, no markdown fences:
 {{"step_ids": [<1 to {max_steps} ids from the list above, most relevant first>]}}
-Use only ids from the list. Do not write new steps. Return {{"step_ids": []}} if none are relevant."""
+Use only ids from the list. Do not write new steps. Leave out steps about a different kind of problem (e.g. software-access approval steps for an app that crashes). Return {{"step_ids": []}} if none of the steps would help with this problem."""
 
 EXTRACT_PROMPT = """You extract structured IT-support details from the employee's LATEST message. You do not reply to the employee and you do not decide what happens next.
 
@@ -285,6 +306,7 @@ Return ONLY valid JSON, no markdown fences:
   "impact_level": "blocked" | "degraded" | "minor" | null,
   "problem_details_vague": <true if problem_details only says something is broken / not working without saying what actually happens, else false>
 }}
+Fill EVERY field the latest message states — not only the one being asked about. A long message often answers several at once (e.g. "Outlook won't open on my Windows laptop" gives problem_details AND device_os).
 Only fill a field if the latest message states it. Never guess or invent values. Never include passwords or codes."""
 
 ESCALATION_RESPONSES = {
@@ -400,13 +422,19 @@ def format_messages(state: AgentState) -> list:
 
 # ── Step 1: classify ─────────────────────────────────────────────────────────
 def neutral_prediction(degraded: bool = False, intent: str = "information_request", confidence: float = 0.0) -> dict:
+    """A rule-based stand-in when the model didn't run (trivial reply or
+    classifier failure). classified=False keeps it out of the UI tags."""
     return {"intent": intent, "intent_confidence": confidence, "intent_probs": None,
             "emotion": "neutral", "emotion_confidence": 0.0, "emotion_probs": None,
-            "degraded": degraded}
+            "degraded": degraded, "classified": False}
+
+
+def is_trivial(text: str) -> bool:
+    return _words(text) in TRIVIAL_MESSAGES
 
 
 def classify_text(text: str) -> dict:
-    if text.lower().strip() in TRIVIAL_MESSAGES:
+    if is_trivial(text):
         return neutral_prediction(intent="chit_chat", confidence=1.0)
     try:
         return classify_message(text)
@@ -451,6 +479,7 @@ def classify(state: AgentState) -> AgentState:
         "emotion_label": p["emotion"], "emotion_confidence": p["emotion_confidence"],
         "risk": risk, "peak_risk": max(state.get("peak_risk", 0.0), risk),
         "intent_source_message": text, "intent_degraded": p.get("degraded", False),
+        "classified": p.get("classified", True) and not p.get("degraded") and p["intent_confidence"] > 0,
     }
 
 
@@ -530,6 +559,39 @@ def _clean(value) -> str | None:
     return None if value.lower() in ("", "null", "none given", "unknown", "n/a") else value
 
 
+def keyword_slots(text: str) -> dict:
+    """Slots a deterministic pattern can read off any message: category,
+    device / OS, error ("none" or a code) and impact."""
+    text = text.replace("’", "'")
+    found: dict = {}
+    if category := guess_category(text):
+        found["issue_category"] = category
+    devices = list(dict.fromkeys(m.group(0) for m in DEVICE_OS.finditer(text)))
+    if devices:
+        found["device_os"] = " ".join(devices)
+    if NO_ERROR.search(text):
+        found["error_message"] = "none"
+    elif code := ERROR_CODE.search(text):
+        found["error_message"] = code.group(0)
+    # Only an explicit "blocked from work" statement counts as impact in free
+    # text — the degraded/minor words ("sometimes", "whenever") are too common.
+    for sentence in re.split(r"(?<=[.!?])\s+", text.strip()):
+        if IMPACT_BLOCKED.search(sentence):
+            found["impact"] = sentence.strip()
+            break
+    return found
+
+
+def playbook_key(state: AgentState) -> str:
+    """SOP playbook to troubleshoot with: the category's, or "app_crash" for an
+    application that crashes, freezes or won't open."""
+    q = state.get("qualification", {})
+    category = q.get("issue_category") or ""
+    problem = " ".join(str(q.get(s) or "") for s in ("problem_details", "error_message"))
+    app_issue = category in ("software", "email", "other", "") or APP_NAMES.search(problem)
+    return "app_crash" if CRASH_PROBLEM.search(problem) and app_issue else category
+
+
 def extract_slots(state: AgentState, text: str) -> dict:
     """Slot values stated in `text` (Groq extraction + deterministic fallbacks).
 
@@ -550,7 +612,13 @@ def extract_slots(state: AgentState, text: str) -> dict:
     slots = {s: _clean(raw.get(s)) for s in SLOTS}
     if slots["issue_category"] not in CATEGORIES:
         slots["issue_category"] = None
-    slots["issue_category"] = slots["issue_category"] or guess_category(text)
+    # Keyword fallbacks fill any slot extraction missed — except the slot
+    # being asked, where the employee's own words (below) are kept verbatim.
+    for slot, value in keyword_slots(text).items():
+        if slot != pending or slot == "issue_category":
+            slots[slot] = slots[slot] or value
+        elif slot == "error_message" and value == "none":
+            slots[slot] = "none"  # "There's no error message" answers the error question
     if pending == "requester" and (SKIP_ANSWER.search(text) or (slots["requester"] or "").lower() == REQUESTER_SKIPPED):
         slots["requester"] = REQUESTER_SKIPPED
     # Whatever the employee said answers the question they were asked, even
@@ -648,34 +716,46 @@ def no_error_given(error: str | None) -> bool:
 
 
 def select_steps(state: AgentState) -> list[str]:
-    """SOP self-help steps to offer. With a real error message, Groq picks the
-    most relevant ones — by id, from sop.json only; anything it returns that
-    isn't a listed id is dropped. Falls back to the category's steps."""
+    """SOP self-help steps to offer — [] when none apply.
+
+    Groq picks the steps relevant to the problem and error, by id, from
+    sop.json only. Its answer decides:
+      - valid ids          -> those steps (unknown ids are dropped)
+      - an empty list      -> nothing applies: [] (no fix check, straight to ticket)
+      - failure / garbage  -> the routed playbook's steps (playbook_key)
+    With neither a problem description nor an error there is nothing to
+    match against, so the playbook's steps are used without a Groq call.
+    """
     q = state.get("qualification", {})
-    category = q.get("issue_category") or ""
-    fallback = self_help_steps(category)
-    if no_error_given(q.get("error_message")):
+    key = playbook_key(state)
+    fallback = self_help_steps(key)
+    if not q.get("problem_details") and no_error_given(q.get("error_message")):
         return fallback
 
-    # category steps first, then every other playbook's
-    candidates = [(p["issue"], s) for key in [category] + [k for k in PLAYBOOKS if k != category]
-                  if PLAYBOOKS.get(key) for p in [PLAYBOOKS[key]] for s in p.get("self_help_steps", [])]
+    # routed playbook's steps first, then every other playbook's
+    candidates = [(p["issue"], s) for k in [key] + [k for k in PLAYBOOKS if k != key]
+                  if PLAYBOOKS.get(k) for p in [PLAYBOOKS[k]] for s in p.get("self_help_steps", [])]
     listing = "\n".join(f"{i}: [{issue}] {step}" for i, (issue, step) in enumerate(candidates))
+    category = q.get("issue_category") or ""
     system = SELECT_STEPS_PROMPT.format(category=CATEGORIES.get(category) or category or "unknown",
-                                        problem=q.get("problem_details") or "", error=q.get("error_message"),
+                                        problem=q.get("problem_details") or "", error=q.get("error_message") or "none",
                                         candidates=listing, max_steps=MAX_SELECTED_STEPS)
     try:
-        raw = llm_select(system, [{"role": "user", "content": str(q.get("error_message"))}])
-        ids = raw.get("step_ids") if isinstance(raw, dict) else None
-        chosen, seen = [], set()
-        for i in ids if isinstance(ids, list) else []:
-            if isinstance(i, int) and not isinstance(i, bool) and 0 <= i < len(candidates) and i not in seen:
-                seen.add(i)
-                chosen.append(candidates[i][1])
-        return chosen[:MAX_SELECTED_STEPS] or fallback
+        raw = llm_select(system, [{"role": "user", "content": f"{q.get('problem_details') or ''}\n{q.get('error_message') or ''}"}])
     except Exception as exc:
-        print(f"[select_steps] Groq step selection failed, using category steps: {exc}")
+        print(f"[select_steps] Groq step selection failed, using playbook steps: {exc}")
         return fallback
+    ids = raw.get("step_ids") if isinstance(raw, dict) else None
+    if not isinstance(ids, list):
+        return fallback
+    if not ids:
+        return []
+    chosen, seen = [], set()
+    for i in ids:
+        if isinstance(i, int) and not isinstance(i, bool) and 0 <= i < len(candidates) and i not in seen:
+            seen.add(i)
+            chosen.append(candidates[i][1])
+    return chosen[:MAX_SELECTED_STEPS] or fallback
 
 
 def needs_requester(state: AgentState) -> bool:
@@ -710,8 +790,9 @@ def ask_next(state: AgentState) -> AgentState:
 
     steps = select_steps(state)
     if not steps:
-        return prepare_ticket(state, "Thanks — I have everything I need. Our SOP has no self-service fix for this, "
-                                     "so I'll raise a ticket for Human IT Support.")
+        # No relevant self-help: skip the fix check rather than show unrelated steps.
+        return prepare_ticket(state, "Thanks — I have everything I need. None of our SOP self-help steps apply to this "
+                                     "problem, so I'll raise a ticket for Human IT Support.")
 
     numbered = "\n".join(f"{i}. {step}" for i, step in enumerate(steps, 1))
     state = {**state, "stage": "troubleshoot", "steps_shown": True}
@@ -1007,6 +1088,10 @@ def run_turn(state: AgentState, msg: str) -> AgentState:
 
 
 def classification_meta(state: AgentState) -> dict:
+    """Tags for the UI — none when the message wasn't actually classified
+    (trivial reply, or the classifier failed / returned no confidence)."""
+    if not state.get("classified", False):
+        return {"classifier_degraded": True} if state.get("intent_degraded") else {}
     return {
         "intent": state.get("intent_label", ""), "intent_raw": state.get("intent_raw", ""),
         "intent_confidence": state.get("intent_confidence", 0.0),
@@ -1073,6 +1158,7 @@ def get_initial_state(session_id: str = None) -> AgentState:
         "impact_level": "",
         "troubleshoot_reasked": False,
         "steps_shown": False,
+        "classified": False,
         "ready_for_ticket": False,
         "escalation_reason": "",
         "sop_gaps": [],
