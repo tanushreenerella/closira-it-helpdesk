@@ -3,7 +3,11 @@
     "name": "Closira IT Helpdesk",
     "tagline": "Employee technology support for everyday IT issues.",
     "support_hours": "Monday to Friday, 8:00 AM to 6:00 PM local time",
-    "support_channels": ["IT Helpdesk portal", "AI Support Assistant", "Human IT Support"]
+    "support_channels": [
+      "IT Helpdesk portal",
+      "AI Support Assistant",
+      "Human IT Support"
+    ]
   },
   "supported_issues": [
     "Account and password issues",
@@ -11,7 +15,8 @@
     "VPN connectivity",
     "Managed device problems",
     "Email issues",
-    "Approved software and access requests"
+    "Approved software and access requests",
+    "Application crashes, freezes, and apps that won't open"
   ],
   "troubleshooting_playbooks": [
     {
@@ -21,6 +26,11 @@
         "Ask them to use the approved password reset process.",
         "Check whether the account is locked after repeated sign-in attempts.",
         "Escalate if the reset fails, multi-factor authentication cannot be completed, or account compromise is suspected."
+      ],
+      "self_help_steps": [
+        "Make sure you are signing in with your company account, not a personal one.",
+        "Use the approved company password reset process.",
+        "If you see a lockout message after several failed attempts, stop retrying — the lock needs Human IT Support."
       ]
     },
     {
@@ -30,6 +40,11 @@
         "Ask the employee to verify airplane mode is off and reconnect to the approved corporate network.",
         "Restart the device once and check whether other sites or services are reachable.",
         "Escalate if multiple employees or locations are affected, or the device cannot obtain a network connection."
+      ],
+      "self_help_steps": [
+        "Check that airplane mode is off.",
+        "Disconnect and reconnect to the approved corporate network.",
+        "Restart your device once, then check whether other sites or services load."
       ]
     },
     {
@@ -39,6 +54,11 @@
         "Verify the approved VPN client is being used and the employee is signing in with their company account.",
         "Ask for the exact error message and whether multi-factor authentication succeeds.",
         "Escalate if the VPN client fails after a restart, access is denied, or a service outage is suspected."
+      ],
+      "self_help_steps": [
+        "Check that your internet connection works without the VPN (open any website).",
+        "Make sure you are using the approved VPN client.",
+        "Sign in with your company account and complete the multi-factor prompt."
       ]
     },
     {
@@ -48,6 +68,10 @@
         "Ask the employee to save work and restart the device when it is safe to do so.",
         "Check cables, power, battery, and connected peripherals for physical issues.",
         "Escalate for a lost or stolen device, signs of malware, physical damage, repeated crashes, or a device that will not power on."
+      ],
+      "self_help_steps": [
+        "Save your work and restart the device when it is safe to do so.",
+        "Check cables, power, battery, and any connected peripherals."
       ]
     },
     {
@@ -57,6 +81,10 @@
         "Check the internet connection and whether the issue occurs in the approved web or desktop mail client.",
         "Ask for any visible error message without requesting passwords or sensitive email content.",
         "Escalate for suspected phishing, account compromise, widespread mail delivery failures, or access to restricted mailboxes."
+      ],
+      "self_help_steps": [
+        "Check your internet connection.",
+        "Try the approved web mail client as well as the desktop app to see whether the problem happens in both."
       ]
     },
     {
@@ -66,6 +94,28 @@
         "Check whether the software is approved and whether the employee is using a managed device.",
         "Ask for the exact error message and business impact.",
         "Escalate access changes requiring manager or system-owner approval, unapproved software, licensing questions, or admin permissions."
+      ],
+      "self_help_steps": [
+        "Make sure you are on a managed company device.",
+        "Check that the application is on the approved software list — unapproved software and access changes need approval from Human IT Support."
+      ]
+    },
+    {
+      "issue": "Application crash",
+      "steps": [
+        "Confirm which application crashes, freezes, or will not open, and when it happens.",
+        "Ask the employee to restart the application and then the device.",
+        "Have the employee start the application in safe mode (for Outlook: outlook.exe /safe) to rule out add-ins.",
+        "Check for pending application and operating system updates.",
+        "Repair Microsoft Office from Settings > Apps if an Office application is affected.",
+        "Escalate if the application still crashes after a repair, or if several employees are affected."
+      ],
+      "self_help_steps": [
+        "Close the application completely and open it again.",
+        "Restart your device, then try the application again.",
+        "Start the application in safe mode to rule out add-ins — for Outlook, press Windows + R, type outlook.exe /safe and press Enter.",
+        "Check for updates (Windows Update, and the app's own update option) and install any that are pending.",
+        "For Microsoft Office apps, run a repair: Settings > Apps > Installed apps > Microsoft 365 > Modify > Quick Repair."
       ]
     }
   ],

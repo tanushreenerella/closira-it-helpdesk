@@ -1,0 +1,617 @@
+text,label
+I am furious about the service,frustrated
+This is terrible and unacceptable,frustrated
+I hate this experience,frustrated
+Your team has been incompetent,frustrated
+Let me speak to a human,explicit_human_request
+Can I talk to a manager?,explicit_human_request
+I need a real person,explicit_human_request
+Please connect me to staff,explicit_human_request
+You have not answered my question twice,repeated_confusion
+I keep asking and still do not understand,repeated_confusion
+That did not answer it again,repeated_confusion
+Why are you repeating yourself?,repeated_confusion
+How do I book a consultation?,normal
+What are your opening hours?,normal
+How long do fillers last?,normal
+Thank you for the information,normal
+I can't log in to my account again. The password reset keeps giving me the same error. This is ridiculous.,frustrated
+"Every time I enter my credentials, the system says they're wrong. I've already confirmed they're correct. This is unacceptable.",frustrated
+My account is locked after three attempts and no one will unlock it. I'm stuck and it's killing my productivity.,frustrated
+The login page keeps timing out even though I have a stable internet connection. I've tried multiple devices. This is infuriating.,frustrated
+I just got an email saying my account was deactivated. I have no idea why and I need access now. I'm furious.,frustrated
+"I’ve been locked out of my account for hours, and every reset attempt fails. This is unacceptable!",frustrated
+"Why can’t I log in? I’ve entered my password correctly, but the system says it’s wrong. This is frustrating.",frustrated
+"I’ve tried all the suggested steps, still can’t access my account. This delay is ruining my workday.",frustrated
+"My account is locked after a single failed login attempt—no warning, no unlock option. This is outrageous!",frustrated
+"I’m getting an error every time I try to sign in, and support hasn’t responded. This is really annoying.",frustrated
+"I can't log into my work account today, and this is killing me—I've been waiting for the reset link forever.",frustrated
+"Every time I enter my password, the system says it’s wrong. I've tried multiple times, and nothing works.",frustrated
+"My account is locked after three failed attempts, and no one can unlock it. This delay is unacceptable.",frustrated
+"I’m still blocked from accessing my email. I've already sent a ticket, but no response. I need this fixed now.",frustrated
+The password reset email keeps bouncing back. I’m frustrated that I can’t get into my account at all.,frustrated
+"I can't log in, my account keeps saying wrong password. I've tried resetting it, but the email never arrives. This is ridiculous!",frustrated
+My credentials are locked after too many attempts. I've been waiting for hours and still can't access my workstation—this is unacceptable.,frustrated
+"Every time I enter my username, it says 'access denied'. I've followed the steps, yet the system refuses me. I'm losing my patience.",frustrated
+"I reset my password twice, but the new login still fails. The helpdesk email keeps bouncing back. This is a major disruption to my work.",frustrated
+I’m locked out of my account and the lockout period is longer than promised. I need this fixed immediately or I'll miss deadlines.,frustrated
+I can't log into my account after the system update. Every attempt fails and I'm missing a deadline.,frustrated
+"My credentials are rejected, even though I entered them correctly. This is unacceptable and delaying my work.",frustrated
+I'm locked out of my account for the third time this week. Why does IT keep messing this up?,frustrated
+"Every time I try to sign in, it says my password is incorrect. I've checked it multiple times and it works elsewhere.",frustrated
+"This login issue is ridiculous—I've tried resetting, but the system still denies access. I need help now.",frustrated
+My Wi‑Fi keeps dropping right before a conference call. I'm losing every minute!,frustrated
+The office network is still down after hours of troubleshooting; this is unacceptable!,frustrated
+"I can't connect to the VPN at all, and the error message keeps flashing. This is ridiculous!",frustrated
+"Every time I try to access the intranet, I get a timeout. This delay is killing productivity.",frustrated
+"The new router was installed last week, yet the signal is terrible and unstable. I'm furious!",frustrated
+Our office Wi‑Fi keeps dropping mid‑video call—this is unacceptable.,frustrated
+I’ve rebooted the router twice and the network still won’t connect. Why?,frustrated
+"The network is so slow, I can’t even send an email. This is ridiculous.",frustrated
+"Every time I try to access the intranet, it times out. We’re losing productivity.",frustrated
+The Wi‑Fi signal is barely reaching the conference room. It’s a disaster.,frustrated
+My office Wi‑Fi keeps dropping every 10 minutes. It's driving me insane!,frustrated
+Network connection is so slow this morning—can't even load email. Why is it so bad?,frustrated
+"The Wi‑Fi keeps disconnecting after 5 minutes, and rebooting the router doesn't help. I'm furious!",frustrated
+"I can't stay connected; the signal is weak everywhere, and I'm losing productivity.",frustrated
+"The network is unusable; documents won't sync, and I'm losing hours of work.",frustrated
+"The office Wi‑Fi keeps dropping every 5 minutes—my project stalls, and I’m losing hours. This is unacceptable!",frustrated
+"I can’t connect to the VPN because the network is down, and I’m already late for the client call. Fix it!",frustrated
+The Wi‑Fi is so slow it takes 30 seconds to load a simple email. I’m furious I can’t get any work done.,frustrated
+"Every time I try to access the intranet, the network times out. This persistent outage is driving me crazy.",frustrated
+The network keeps glitching and disconnecting. I’m stuck with no internet and I can’t finish my reports.,frustrated
+"Our Wi‑Fi keeps dropping after lunch, and nobody can finish their reports. This is unacceptable!",frustrated
+"I’m still connected to the old network, but no one can see my files. Why isn’t it fixed?",frustrated
+The office network is so slow that I can’t even load Outlook. I’ve already tried rebooting my laptop!,frustrated
+"I’m frustrated that the Wi‑Fi signal is weaker in the conference room, and meetings keep getting cut off.",frustrated
+"This outage is ridiculous—I’m stuck offline for hours, and no one has communicated any ETA.",frustrated
+"My VPN keeps disconnecting mid‑meeting, and it’s driving me crazy. I can’t finish my work!",frustrated
+"I’ve rebooted the laptop, cleared the cache, and reinstalled the client, but the VPN still refuses to connect.",frustrated
+"Every time I try to connect, the error says “authentication failed.” I’ve checked my credentials multiple times.",frustrated
+"The VPN lock screen takes forever to load, and it’s blocking me from accessing any critical files.",frustrated
+I’m stuck in a loop where the VPN disconnects after 2 minutes. This is unacceptable for my deadlines.,frustrated
+I’ve been trying to connect to the VPN all morning and it keeps timing out. This is ridiculous!,frustrated
+The VPN just stopped working on my laptop and I’m unable to access any remote files—why is this happening?,frustrated
+"Every time I hit connect, the VPN throws an error and I can’t get past the login screen. I’m frustrated!",frustrated
+My VPN is dead; it fails to establish a connection and I’m blocked from work tasks. This is unacceptable!,frustrated
+"I keep getting a connection refused error when attempting the VPN, and it’s caused major delays for my project.",frustrated
+"VPN keeps disconnecting mid‑meeting, and I can’t finish the presentation. I’m losing valuable time and clients are noticing.",frustrated
+"I’ve rebooted the router and re‑installed the client, but the VPN still refuses to connect. I’m frustrated and out of hours.",frustrated
+"The VPN tunnel drops every 5 minutes, and I’ve already pinged IT twice. It’s impossible to stay productive.",frustrated
+"I’m getting random authentication errors every time I try to connect. This is ridiculous, and I need a fix now.",frustrated
+"Despite following the troubleshooting guide, the VPN remains unusable. I’m angry that I can’t access my files.",frustrated
+"VPN keeps disconnecting during my video call. I’ve tried rebooting the router, still no luck—this is unacceptable!",frustrated
+"Every time I connect to the VPN, the session times out instantly. I have to do work in a hurry and it’s killing productivity!",frustrated
+"The VPN just shows a “connection failed” error, even after updating the client. I’m frustrated, this is a critical issue!",frustrated
+"I spent an hour troubleshooting the VPN, and it still won’t load any site. It’s getting ridiculous, I need a fix now!",frustrated
+"VPN login stalls on the splash screen for minutes, then gives up. I’m about to miss a deadline—this is intolerable!",frustrated
+"VPN keeps disconnecting mid‑meeting, and the team is losing hours. I’m fed up with this nonsense!",frustrated
+Why does the VPN refuse to connect after I install the new update? I’ve been trying for hours!,frustrated
+"Every time I launch the VPN, it crashes. I can’t get any work done—this is unacceptable!",frustrated
+"I’ve reinstalled the client, cleared the cache, yet the VPN still throws a timeout. I’m furious!",frustrated
+The VPN keeps throwing an authentication error even though my credentials are correct. This is ridiculous!,frustrated
+"My laptop just died at 3 am, and I can't even boot it up. I have an important presentation tomorrow—this is unacceptable!",frustrated
+"I’ve tried every reset and reinstall, yet the screen remains black. This is the third time this month, and I’m losing my mind.",frustrated
+"My new workstation keeps disconnecting from Wi‑Fi every 5 minutes, and the admin team says it’s a 'network issue.' I’m stranded!",frustrated
+"I paid for a new monitor, but it’s flickering and won’t turn on. This is the worst customer support I've ever encountered.",frustrated
+"Every time I plug my external drive, the computer freezes. I need that data right now and this delay is infuriating.",frustrated
+"My laptop keeps shutting down on me during meetings, and the battery dies in minutes. This is ridiculous!",frustrated
+"The screen on my desktop flickers constantly, and I can't focus. I'm losing time and my frustration is at max.",frustrated
+My work device just froze and won't reboot. I'm stuck and this delay is unacceptable for my deadlines.,frustrated
+"I installed the new software, and now my keyboard is unresponsive. I've tried everything and nothing works.",frustrated
+"The Wi‑Fi on my tablet drops every 5 minutes, killing my productivity. This is the worst network experience.",frustrated
+"This laptop keeps crashing every time I open Excel, and I'm already behind on reports!",frustrated
+"I can't log into my device and the screen is black. I've tried restarting, but nothing changes. I'm furious!",frustrated
+"My monitor flickers constantly, making it impossible to finish the presentation. This is unacceptable!",frustrated
+The keyboard on my new workstation is dead; I can't type a word and it's wasting my entire day!,frustrated
+"Every time I plug in my USB drive, the computer freezes—why does IT keep installing bad drivers?",frustrated
+My laptop won't boot again—still stuck on the black screen! I need this fixed NOW.,frustrated
+"I just replaced the monitor, but the screen is still flickering and I can’t see anything.",frustrated
+"The new keyboard I received is broken, keys are stuck. This is ridiculous!",frustrated
+"Every time I try to log in, the system times out—this is killing productivity.",frustrated
+"The software I installed is crashing every minute, and I have deadlines today!",frustrated
+"My laptop is freezing every time I open Outlook; I've tried restarting, still nothing!",frustrated
+"The new monitor I just received is completely unresponsive—no power, no signal. I need help ASAP!",frustrated
+"My wireless adapter keeps disconnecting mid-call, and the driver updates just make it worse.",frustrated
+I can't boot my desktop; the screen stays black even after a hard reset. This is ridiculous.,frustrated
+"The USB hub I plugged in is dead—no devices work through it, and the port is still non-functional.",frustrated
+"My work email keeps bouncing back to me. It’s been a week, and I’m drowning in missed deadlines.",frustrated
+I can’t access my inbox; the server keeps timing out. This is killing productivity and I'm furious.,frustrated
+"Every time I try to send an email, it says 'mail not delivered.' My whole project depends on this, and I'm extremely frustrated.",frustrated
+"The email client crashes on opening. I’ve already sent multiple urgent messages, but nothing gets through. I’m angry!",frustrated
+"I’m getting no email notifications, and my inbox is full of spam. I’ve tried reconfiguring it, but it’s still broken—this is unacceptable.",frustrated
+My inbox is full and I can't receive any emails. This is unacceptable—our client meetings are being delayed.,frustrated
+"Every time I try to send an email, the server throws a 550 error. I've already checked my address. I need a fix ASAP.",frustrated
+I was just notified that my email is blocked for spamming. I have never sent spam. This is ruining my reputation.,frustrated
+"The email client keeps crashing whenever I open attachments. I've tried reinstalling, but nothing helps. I’m furious!",frustrated
+"I can't log into Outlook; it keeps saying my account is locked. I have to send urgent documents, and this is ridiculous.",frustrated
+"I’ve been trying to send an email to the board, but it’s stuck in outbox for hours. This delay is killing our deadline!",frustrated
+"Every time I hit send, the mail client crashes. I need this report sent now—this is unacceptable.",frustrated
+My email shows “delivery failed” for a message that was just sent. The system is completely useless today.,frustrated
+I can’t add attachments larger than 5MB; the error pops up instantly. I’ve spent an entire shift on this pointless limit.,frustrated
+"The corporate email server is down, and I have no way to contact my clients. This outage is outrageous.",frustrated
+My email keeps crashing every morning. I lose half my inbox and it’s driving me insane!,frustrated
+I’ve tried resetting my mailbox but it still won’t sync. This is the third time this month!,frustrated
+Why can’t my sent folder keep disappearing? I’m losing important client emails and it’s unacceptable!,frustrated
+"I’ve forwarded the same attachment dozens of times, yet it never arrives. It’s a nightmare!",frustrated
+"Every time I log in, I get a 404 error on Outlook. I’ve already cleared cache—still nothing!",frustrated
+"I can't open any emails, and the error keeps popping up every time I click. This is killing productivity!",frustrated
+Every message I send disappears into the void—no delivery status. I'm losing important client correspondence.,frustrated
+My inbox is full and I still can't send. It feels like the system is purposely holding me back.,frustrated
+"Why is my email client refusing to connect? I've restarted the computer and tried multiple networks, nothing works.",frustrated
+The server keeps crashing when I try to send a bulk email. I'm stuck waiting for a response that never comes.,frustrated
+I can't open the software update tool; it crashes every time I click it. I'm losing hours of work!,frustrated
+Every attempt to log into the new portal fails with a 401 error. This is the third time today!,frustrated
+The access rights I was granted just disappeared—now I can't view any project files. I'm furious!,frustrated
+"The program I need is blocked by the firewall, and no one will unblock it. This is unacceptable!",frustrated
+"My credentials keep getting rejected, yet my password works elsewhere. This is the last straw.",frustrated
+"I can’t open the new project file, it keeps crashing. I’ve tried reinstalling, but nothing works. This is killing my deadline!",frustrated
+"The corporate VPN drops every minute; I’ve been on hold for hours, and my email still won’t sync. This is unacceptable!",frustrated
+"I was promoted to admin, but I can’t even log into the admin panel. It says access denied—again. I'm furious!",frustrated
+"Every time I try to update the software, it throws an error code I can’t find. I’ve exhausted the help docs. Very frustrating!",frustrated
+"The shared drive is locked and I can’t move any files. I’ve already asked twice, but still no resolution.",frustrated
+"I can't log into the design software, and the error keeps popping up—this is unacceptable!",frustrated
+My access to the client database was revoked without notice; I need it back now!,frustrated
+"The new update crashed the application twice today, killing my deadlines—this is ridiculous!",frustrated
+I still have no admin rights to the shared folder; every attempt fails with the same error.,frustrated
+The software keeps asking for a license key that I never received—this is infuriating!,frustrated
+I’ve been stuck on the new accounting software for an hour and it keeps crashing every time I try to save.,frustrated
+Why does the VPN disconnect whenever I open the shared drive? I need that file now!,frustrated
+"The login screen is frozen, and the error says 'Authentication failed' even though my password is correct.",frustrated
+"Every time I click the 'Submit' button in the HR portal, it throws a 500 error. This is ridiculous.",frustrated
+"The app refuses to open after the update, saying my account is disabled—this is the second time this month.",frustrated
+"I can't access the finance app, and the error pops up every time. This is ruining my deadlines!",frustrated
+"My VPN keeps disconnecting mid-call; I've tried reconnecting, but it still won't work. I'm frustrated!",frustrated
+"The new software update crashed my workstation, and I can't reopen my files. This is unacceptable.",frustrated
+"I've been trying to log into the project management tool for hours, but it keeps saying my credentials are wrong.",frustrated
+"Every time I open the email client, it locks me out. I'm losing time and productivity.",frustrated
+I’m stuck with my account lockout and the error keeps popping up. Please connect me to a live technician.,explicit_human_request
+"The password reset link expired, and I still can’t log in. I need a person to help me access my account.",explicit_human_request
+I keep getting a 403 error when trying to log in to the portal. Can I speak with a support agent?,explicit_human_request
+I’m unable to sign in after the recent policy update. Could you transfer me to someone who can resolve this?,explicit_human_request
+The automated system won’t recognize my credentials. I need a live helpdesk representative to unlock my account.,explicit_human_request
+"I can't log into my account, the password reset link keeps timing out. Can someone help me over the phone?",explicit_human_request
+My account is locked after multiple attempts. I need a tech agent to unlock it. Can I speak with someone?,explicit_human_request
+Resetting my password via the portal fails. I want to chat with a support person right now.,explicit_human_request
+The login page says 'account suspended'. I need to talk to a manager to resolve this. Can you transfer me?,explicit_human_request
+"I received an error that my credentials are invalid, but I'm sure they're correct. Please connect me to a human technician.",explicit_human_request
+I need to talk to a technician because I keep getting an access denied message on my workstation.,explicit_human_request
+Can someone help me? I can't log into my account and the error says credentials invalid.,explicit_human_request
+I'm stuck on the login screen—please transfer me to a human support agent.,explicit_human_request
+Help! My user account keeps locking; I need a person to unlock it right now.,explicit_human_request
+"I tried resetting my password, but it still doesn't work. I want to speak with IT support.",explicit_human_request
+I keep getting a 403 error when I try to log into the HR portal. Can someone connect me to a human to troubleshoot?,explicit_human_request
+My account was locked after three failed attempts. I need to talk to a tech agent to reset the lockout.,explicit_human_request
+"The email login keeps timing out, and the automated help says to wait 10 minutes. I want to chat with a person right now.",explicit_human_request
+I can't access my VPN because of a certificate issue. Please transfer me to a support technician.,explicit_human_request
+I entered the wrong password and got locked out. I need a live agent to help unlock my account ASAP.,explicit_human_request
+I keep getting a 401 error when I try to log in. Can someone help me reset my account?,explicit_human_request
+My workstation says I'm not authorized to access the VPN. I need a human to troubleshoot this ASAP.,explicit_human_request
+"I tried the password reset link, but it still says my credentials are invalid. Please connect me to a support agent.",explicit_human_request
+I’m locked out of my email after a security update. Could someone transfer me to a technician?,explicit_human_request
+"Every time I enter my password, it says 'login failed'. I need a live chat with IT right now.",explicit_human_request
+"I can't get online, please connect me to a human IT rep ASAP.",explicit_human_request
+Could you transfer me to a technician? My Wi‑Fi keeps dropping.,explicit_human_request
+"I need a manager to fix my network, please. Can't resolve it.",explicit_human_request
+Help! My laptop won’t join the office Wi‑Fi. Talk to someone.,explicit_human_request
+Urgent: Wi‑Fi outage—please route me to a real person.,explicit_human_request
+"I keep getting disconnected from the Wi‑Fi, can someone help me directly?",explicit_human_request
+The network keeps dropping during my video call—need a technician on the line.,explicit_human_request
+Can you transfer me to a human right now? My Wi‑Fi just stopped working.,explicit_human_request
+My office router is still down. Please connect me to a support agent ASAP.,explicit_human_request
+I’m unable to join the VPN over Wi‑Fi; can a manager or IT rep look into this?,explicit_human_request
+My office Wi‑Fi keeps disconnecting. Can a technician help me right now?,explicit_human_request
+The router rebooted but I'm still offline. I need a human to troubleshoot this ASAP.,explicit_human_request
+I’m not getting any network signal in the meeting room. Please transfer me to a support agent.,explicit_human_request
+My VPN keeps timing out even though Wi‑Fi is active. Could someone from IT assist me personally?,explicit_human_request
+I’ve reset the wireless settings but nothing works. I would like to speak to a person to resolve this.,explicit_human_request
+"I’m trying to connect to the office Wi‑Fi, but it keeps saying the network is unavailable. Can someone help me directly?",explicit_human_request
+The Wi‑Fi keeps disconnecting every few minutes. I need a technician to look at my laptop right now.,explicit_human_request
+I can’t join the conference call because the wireless signal is weak. Please transfer me to a support agent.,explicit_human_request
+My network card isn’t recognized by the Wi‑Fi. I’m stuck at home and need a person to troubleshoot.,explicit_human_request
+"The VPN is working, but the Wi‑Fi is dead. I’d like to speak with someone who can fix this ASAP.",explicit_human_request
+"I can't connect to Wi‑Fi, please connect me to a technician right now.",explicit_human_request
+My office network keeps dropping; can you transfer me to a human support rep?,explicit_human_request
+The Wi‑Fi signal is weak and I need help from an agent.,explicit_human_request
+"I'm having trouble with my network adapter, please connect me to a person.",explicit_human_request
+The VPN won’t establish; I need to talk to a network specialist.,explicit_human_request
+I’m still getting error 403 when I try to connect to the VPN. Can you connect me to a human technician?,explicit_human_request
+The VPN keeps disconnecting every few minutes. I need a person on the line to help me troubleshoot this urgently.,explicit_human_request
+I can’t get past the login screen. Please transfer me to an IT support agent.,explicit_human_request
+My VPN client won’t start after the last update. Could you please chat me with a real person to fix it?,explicit_human_request
+The VPN is blocking my remote access to the servers. I need help from a human right now.,explicit_human_request
+"I can't connect to the VPN, and the error says 'authentication failed'. Can I speak to a technician?",explicit_human_request
+My laptop keeps dropping the VPN after 10 minutes. I need a live chat with IT support.,explicit_human_request
+The VPN shows a 'connection timed out' error. Please transfer me to a person who can help.,explicit_human_request
+"I've tried restarting and reinstalling, but the VPN still won't work. Can you connect me to a manager?",explicit_human_request
+The VPN is stuck on 'connecting' for hours. I need to talk to a human right now.,explicit_human_request
+I can't connect to the VPN; can I speak to an IT person right now?,explicit_human_request
+"The VPN keeps disconnecting, and I need help from a technician ASAP.",explicit_human_request
+Please transfer me to a support agent—my VPN access is not working.,explicit_human_request
+"I'm stuck, the VPN client shows an error. Could someone chat with me about this?",explicit_human_request
+I need to talk to a human about why my VPN won’t authenticate.,explicit_human_request
+I keep getting a VPN error code 1001. Can someone help me over the phone?,explicit_human_request
+My VPN drops every 5 minutes. I need a live chat with a technician right now.,explicit_human_request
+Unable to connect to VPN on my laptop. Please transfer me to a support agent.,explicit_human_request
+The VPN keeps timing out after login. Can you call me to troubleshoot?,explicit_human_request
+I tried all the steps but still can't access VPN. I want to speak with a human right away.,explicit_human_request
+"I’ve tried reconnecting the VPN, but it still says 'connection timed out'. Can I speak with a human tech?",explicit_human_request
+The VPN keeps crashing after the update. I need a live agent to troubleshoot this issue.,explicit_human_request
+My VPN logs show authentication errors. I’d like to talk to someone on the help desk right now.,explicit_human_request
+I’m stuck on VPN setup; the wizard won’t complete. Could you transfer me to a human support rep?,explicit_human_request
+The VPN connection is unstable and keeps dropping. I want to speak with an IT specialist ASAP.,explicit_human_request
+My laptop screen flickers and I need a technician on site. Can you connect me to a human?,explicit_human_request
+"I’m stuck with a virus on my device, please transfer me to a real person for help.",explicit_human_request
+My monitor won’t turn on. I want to speak with an IT support agent right now.,explicit_human_request
+I need someone to walk me through a hard reset; can you put me on a call with a human?,explicit_human_request
+"My keyboard is unresponsive, can I chat with a live technician to fix it?",explicit_human_request
+Can you connect me to a live support agent? My laptop screen keeps flickering and I need help now.,explicit_human_request
+I want to talk with a technician about my monitor not turning on. Please transfer me.,explicit_human_request
+Help! My keyboard is dead and I can’t type. I need a human to fix this immediately.,explicit_human_request
+Could you please route me to a human representative? My printer is stuck in a loop and I need assistance.,explicit_human_request
+I’d like to speak with someone directly about my desktop’s performance issues.,explicit_human_request
+My laptop won't start after the update. Can I talk to a tech person?,explicit_human_request
+The monitor flickers all night. I need a human to fix it.,explicit_human_request
+"I can't get the printer to connect, and the support bot won't help. Please transfer me to an agent.",explicit_human_request
+"My tablet is freezing, and the help guide is useless. I want to speak with someone.",explicit_human_request
+The keyboard is stuck in ghost mode. Can you connect me to a technician?,explicit_human_request
+My laptop screen is flickering and I need a human to diagnose it ASAP. Can you connect me to a tech rep?,explicit_human_request
+"I tried rebooting my desktop, but the blue screen keeps appearing. Please transfer me to a support agent.",explicit_human_request
+The monitor on my workstation is stuck on a black screen. I need a person to check the cable connections.,explicit_human_request
+My keyboard is unresponsive; I've tried the USB port but nothing works. Can someone chat with me?,explicit_human_request
+I keep getting error 0x80070005 when opening files. I need to speak with an IT specialist right now.,explicit_human_request
+"My laptop won't start after the update, can I speak to a technician?",explicit_human_request
+The screen is flickering and I need someone to look at it in person.,explicit_human_request
+"I tried the reset but it still shows a blue screen, can you transfer me to a human?",explicit_human_request
+My monitor is dead and I've already rebooted multiple times. Need a live support agent.,explicit_human_request
+"The keyboard stopped typing, can I get a human to troubleshoot this?",explicit_human_request
+I can't log into my corporate email. Please connect me to a technician right away.,explicit_human_request
+The email client keeps crashing whenever I open a message. I need a human to look at this.,explicit_human_request
+"I just got an error saying my mailbox is full, but I haven't received any notifications. Can someone help me?",explicit_human_request
+My Outlook keeps showing a 'connection lost' error. I need a support rep to fix it ASAP.,explicit_human_request
+I can't access my forwarded emails from the weekend. Please transfer me to a person who can troubleshoot.,explicit_human_request
+I just got an error saying my mailbox is full. Can someone help me clear it or connect to a human right now?,explicit_human_request
+My Outlook keeps crashing when I open a calendar invite. I need a technician to look at this ASAP.,explicit_human_request
+"I tried to change my email signature, but the settings keep reverting. Please transfer me to a support agent.",explicit_human_request
+Can't log into my corporate email on my phone. I need someone to walk me through the setup process.,explicit_human_request
+"Every time I hit reply-all, my message goes to the wrong distribution list. Could you connect me with an IT specialist?",explicit_human_request
+My Outlook keeps crashing when I try to send any email. I need someone to look at this right now.,explicit_human_request
+I can't get into my corporate mailbox; the server says my account is locked. Please connect me with an IT person.,explicit_human_request
+The email signature auto-update keeps failing. Can a tech help me set it up manually?,explicit_human_request
+I accidentally deleted an important email folder and can't restore it. I need a human to recover the data.,explicit_human_request
+"Every time I send a calendar invite, it says 'delivery failed'. Please transfer me to a support agent.",explicit_human_request
+"I can't get my corporate email to load on my phone, can someone help me with it?",explicit_human_request
+My inbox keeps saying 'server unreachable'—please connect me to a human tech right now.,explicit_human_request
+I need to change my email signature but the auto‑update fails; can a support person walk me through it?,explicit_human_request
+The email app keeps crashing after I open a large attachment; I need a live chat with a technician.,explicit_human_request
+Please transfer me to an IT specialist—I can't access my email from my work laptop.,explicit_human_request
+"Hi, I need help with my email. Can I speak to a human?",explicit_human_request
+My inbox keeps disappearing messages. I want to talk to a tech support agent now.,explicit_human_request
+Can someone transfer me to a real person? My email account is locked.,explicit_human_request
+I’m stuck with a pop‑up error on Outlook; I need a human to resolve it.,explicit_human_request
+"Please connect me to a manager, my corporate email isn’t syncing on mobile.",explicit_human_request
+"I’m trying to install the new design software, but it keeps crashing. I need someone to walk me through it over a call.",explicit_human_request
+"My laptop keeps losing VPN access, and the error keeps popping up. Can a tech transfer me to a human to troubleshoot?",explicit_human_request
+The update to the project management tool just caused my account to lock. I’d like to talk to a support agent right now.,explicit_human_request
+I’m stuck on the remote desktop connection and can’t get through. Please connect me with a human technician ASAP.,explicit_human_request
+I keep getting a pop‑up that says my software license is invalid. I need to talk to a manager to resolve this.,explicit_human_request
+I keep getting a 403 error when opening the new HR portal. Can you connect me to a human technician to resolve this?,explicit_human_request
+The software update installed on my laptop broke Outlook. I need to talk to someone real to fix it.,explicit_human_request
+My VPN keeps disconnecting mid‑call and I can't get it back on. Please transfer me to a support agent right away.,explicit_human_request
+I installed the new accounting app but it won't sync with the server. I need a person to walk me through troubleshooting.,explicit_human_request
+The remote desktop client crashes every time I try to access the database. Could someone transfer me to an IT specialist?,explicit_human_request
+I need to talk to a tech specialist about my software license issue.,explicit_human_request
+Can someone transfer me to a live support agent? My application keeps crashing.,explicit_human_request
+I’m stuck with a firewall error—please connect me to a person who can help.,explicit_human_request
+I require a manager’s assistance to reset my workstation access.,explicit_human_request
+Could you route me to a human IT rep to resolve my VPN connection problem?,explicit_human_request
+I keep getting a 403 error when trying to access the shared drive. Can someone help me resolve this?,explicit_human_request
+The software update failed and now I can't log in. I need a tech to look into it.,explicit_human_request
+My VPN keeps disconnecting and I can't reach the office network. Please connect me to an IT person.,explicit_human_request
+I accidentally deleted a critical file from the project folder. I urgently need a human to recover it.,explicit_human_request
+The new collaboration tool keeps crashing on startup. I'd like to speak with a support agent to troubleshoot.,explicit_human_request
+"I tried installing the new accounting software, but it keeps crashing. Can someone walk me through a manual install?",explicit_human_request
+"My VPN connects, but I can't access the shared drive. Please transfer me to a technician who can troubleshoot.",explicit_human_request
+The software update failed mid‑install and left me locked out of my account. I need a human to reset my access.,explicit_human_request
+I keep getting a permission denied error when opening the project file. Can I speak to an IT specialist?,explicit_human_request
+"The help‑desk bot says my request is pending, but I need this fixed now. Please connect me to a live agent.",explicit_human_request
+"I tried the reset link again, but the email still says the link expired. I keep getting the same message.",repeated_confusion
+"Forgot my password and used the help center steps, but I still can't log in—still shows invalid credentials.",repeated_confusion
+"I followed the two-factor instructions, yet the app keeps asking for the code and never lets me in.",repeated_confusion
+"Reset my account password, but the system still says my username is incorrect. Nothing works.",repeated_confusion
+"Repeatedly hit the login button after a fresh password change, but I still receive a ‘login failed’ error.",repeated_confusion
+"I followed the reset steps you sent, but my account still shows locked. I keep getting the same error message.",repeated_confusion
+"The instructions helped me get to the login page, but it keeps saying my credentials are wrong even though I’m sure they’re right.",repeated_confusion
+"I tried the two‑factor code you gave, but the system rejects it as invalid. I’m still stuck.",repeated_confusion
+"After clicking the password reset link, the new password isn’t accepted. I’ve tried different browsers, no luck.",repeated_confusion
+I’m repeatedly seeing the 'access denied' prompt after logging in; nothing you suggested fixed it.,repeated_confusion
+"I followed the reset steps you sent, but my account still says it's locked. Can you check?",repeated_confusion
+"I typed the new password, still denied. The help guide hasn't helped me get in.",repeated_confusion
+"Repeatedly tried to log in after the password change, but nothing works. What's going on?",repeated_confusion
+"Your last instructions didn't resolve the issue. I can't access the portal, and I'm running out of time.",repeated_confusion
+"I kept using the same recovery email you suggested, but login keeps failing. Need a fresh solution.",repeated_confusion
+"I followed the reset steps, but I still can’t log in. The system says my password is invalid. What’s wrong?",repeated_confusion
+"I clicked the link you sent, entered my new password, yet I keep getting an access denied error. Please help.",repeated_confusion
+"I tried logging in after the password change you recommended, but it keeps saying my account is locked. What should I do?",repeated_confusion
+"I’ve cleared my cache, restarted the browser, and used the exact password I set—still can’t log in. Why?",repeated_confusion
+"I used the new password you provided, but the login screen still prompts for a password. It’s not working at all.",repeated_confusion
+"I followed the reset steps you sent, but the portal still says my password is wrong. It’s not working at all.",repeated_confusion
+"I clicked the link and entered my new password, yet I keep getting a ‘login failed’ error. Nothing seems to fix it.",repeated_confusion
+I’m still unable to sign in after clearing cache and trying a different browser. The instructions didn’t resolve the issue.,repeated_confusion
+"Even after updating my credentials, the system denies me access. The previous fix didn’t help.",repeated_confusion
+"I used the account recovery form, but the system still blocks me from logging in. It’s the same problem.",repeated_confusion
+"I followed the reset steps you sent, but my laptop still can’t connect to the office Wi‑Fi. It’s showing the same error. What else?",repeated_confusion
+"The network drop‑down shows our Wi‑Fi, I selected it, but it still won’t authenticate. I’ve rebooted the router, yet no change.",repeated_confusion
+"I’m still getting 'access denied' when I try to join the campus network, even after re‑entering the credentials you provided. Help?",repeated_confusion
+"My Wi‑Fi stays disconnected after applying the new policy, and the help page says to 'clear cache', which I already did. It’s still stuck.",repeated_confusion
+"I’ve tried the troubleshooting guide, restarted my device, and checked the SSID, but I can’t connect to the office network. What’s the next step?",repeated_confusion
+"I followed the reboot steps you sent, but my laptop still shows no Wi‑Fi networks.  Why isn’t this working?",repeated_confusion
+"I disconnected and re‑connected the Wi‑Fi, but it keeps saying the password is wrong—did I miss something?",repeated_confusion
+"I cleared the network settings as instructed, yet my device still can’t find the corporate SSID.  What else should I try?",repeated_confusion
+"I changed the router’s firmware per your guide, but the connection drops after a few minutes.  It’s the same issue as before.",repeated_confusion
+"I checked the IP address and subnet mask, but the network still won’t allow me to access shared drives.  Any other suggestions?",repeated_confusion
+"I already rebooted the router and cleared my DNS cache, but the Wi‑Fi still drops after 5 minutes. What else can I try?",repeated_confusion
+"I followed the guide, switched to the right SSID, but I'm still getting ‘no internet’ on my laptop. The steps didn't fix it.",repeated_confusion
+Resetting my device and updating the drivers didn't solve the connectivity issue. I'm stuck with intermittent Wi‑Fi again.,repeated_confusion
+"I've restarted the modem, checked the cables, and verified the network settings, yet the network still shows as unavailable.",repeated_confusion
+"I reinstalled the network adapter, but the signal strength remains weak and I can't connect to the office Wi‑Fi.",repeated_confusion
+"I followed the steps you sent, but my laptop still can’t find any Wi‑Fi networks.",repeated_confusion
+Resetting the router didn’t help; the connection is still down and the same error pops up.,repeated_confusion
+"I re‑entered the network password, yet the device keeps saying “connection unavailable.”",repeated_confusion
+"After updating the driver, the Wi‑Fi icon shows a signal, but I still can’t browse the internet.",repeated_confusion
+Your instructions didn't resolve the issue—my computer keeps disconnecting every few minutes.,repeated_confusion
+"I already reset the router, but the Wi‑Fi still won’t connect. I followed the guide exactly.",repeated_confusion
+"Tried the new VPN profile you sent, but it keeps timing out. Nothing changed.",repeated_confusion
+"Rebooted my laptop and cleared DNS cache, yet I still get a ‘no internet’ icon.",repeated_confusion
+The network switch I configured still shows no link lights. The instructions didn’t help.,repeated_confusion
+"I ran the diagnostics tool you recommended, but the error persists and my Wi‑Fi remains offline.",repeated_confusion
+"I followed the VPN setup steps, but I still can’t connect. It says the credentials are wrong. I’ve tried resetting the password but nothing changed.",repeated_confusion
+"After re‑installing the VPN client, the connection keeps timing out. I’ve verified my network and the server is reachable from other devices.",repeated_confusion
+I’m back on the same issue: the VPN shows ‘authentication failed’ even though the same credentials work on my phone. It’s the same error every time.,repeated_confusion
+"I re‑entered my login details twice, restarted my PC, and cleared the cache, yet the VPN keeps rejecting me. I don’t understand why.",repeated_confusion
+The VPN client keeps saying my account is locked after I try to connect. I’ve checked the user portal and it shows active. Still no luck.,repeated_confusion
+"I tried connecting to the VPN as instructed, but it still shows the same timeout error. What else should I do?",repeated_confusion
+The VPN login keeps failing even after resetting the password twice. Can you explain another solution?,repeated_confusion
+"I followed the steps, yet the VPN still refuses to authenticate. I’m stuck. Any other tips?",repeated_confusion
+"Despite installing the latest client, the VPN keeps disconnecting. I’ve already checked my firewall settings. Help?",repeated_confusion
+"I’ve restarted my laptop and re-entered credentials, but the VPN still reports it’s unreachable. What’s the next step?",repeated_confusion
+"I tried reconnecting to the VPN, but the same error pops up. It says the certificate expired, yet I refreshed my profile just yesterday.",repeated_confusion
+"I followed the step-by-step guide, but my laptop still won’t connect. The VPN client keeps restarting itself automatically.",repeated_confusion
+"I reinstalled the VPN client as suggested, yet the prompt keeps asking for credentials that I’ve already entered correctly.",repeated_confusion
+"I disabled my firewall, but the VPN still reports a timeout. It seems like the settings haven’t changed at all.",repeated_confusion
+"Even after resetting my network adapter, the VPN keeps disconnecting after a minute. I’m not sure what’s wrong.",repeated_confusion
+"I followed the VPN setup steps you sent, but I still get a connection error. It keeps saying the authentication failed.",repeated_confusion
+"I tried reconnecting after the restart, yet the VPN still refuses to work. No matter how many times I reboot, it doesn't help.",repeated_confusion
+"Your guide said to update the driver, but the VPN still crashes when I launch it. The error screen is the same as before.",repeated_confusion
+"I disabled the firewall as instructed, yet the VPN still can't establish a session. It's exactly the same error I had yesterday.",repeated_confusion
+"I reinstalled the client per your instructions, but it still shows 'invalid credentials'. The VPN never connects despite following everything.",repeated_confusion
+"I followed the VPN setup steps you sent, but it still says 'connection failed' even after restarting my PC.",repeated_confusion
+"I reinstalled the VPN client and cleared my cache, yet I keep getting the same authentication error. What else should I try?",repeated_confusion
+"Your guide worked for a bit, but now the VPN disconnects after 5 minutes. I’ve tried changing the server, no luck.",repeated_confusion
+"I used the correct profile and entered the domain, but the VPN still won’t connect. The error message is the same as last time.",repeated_confusion
+"I’ve reset my password, updated the app, and rebooted, but the VPN keeps showing 'access denied'. I’m not sure what’s wrong.",repeated_confusion
+"I already tried rebooting the laptop, but the screen still stays black. Nothing helped.",repeated_confusion
+"I followed the remote reset steps you sent, but the device still won’t connect to Wi‑Fi. Same issue.",repeated_confusion
+Your last fix didn’t solve it— the keyboard backlight still flickers after power‑on. I'm stuck.,repeated_confusion
+"I kept the power cable plugged in, yet the monitor shows a blank screen. Your previous suggestion didn’t work.",repeated_confusion
+Repeatedly installing the driver didn’t resolve the error message on startup. It still crashes immediately.,repeated_confusion
+"I followed the reset steps you sent, but my laptop still won’t boot. The screen stays black, and I get the same error every time.",repeated_confusion
+"I’m stuck again: the instructions for reinstalling the printer driver didn’t work, and it still shows as offline on my machine.",repeated_confusion
+"I tried the troubleshooting guide for the monitor flickering, but the display still stutters and the same error pops up each time I restart.",repeated_confusion
+"I’ve already updated the firmware on the router as instructed, yet the Wi‑Fi keeps dropping after just a few minutes of use.",repeated_confusion
+"I followed the steps to clear the cache on my tablet, but the app still crashes immediately after launch.",repeated_confusion
+"I followed the steps you sent, but the laptop still won’t boot. Same error as last time.",repeated_confusion
+"Tried rebooting and unplugging power, but the screen stays blank. I’m not getting any output.",repeated_confusion
+The instructions you gave didn’t help; my phone still isn’t syncing with the company app. I need a fix.,repeated_confusion
+"I reinstalled the driver as suggested, yet the printer remains offline. It’s the same problem.",repeated_confusion
+The reset I performed didn’t work; my desktop still shows a login loop. I’m stuck again.,repeated_confusion
+"I rebooted the laptop, cleared the cache, and updated the drivers, but the screen still flickers—nothing helped so far.",repeated_confusion
+"Tried the steps you sent, but the device still shows a blue screen on startup. It’s the same problem every time.",repeated_confusion
+"I followed the instructions to disable the firewall, yet the network still blocks my VPN. It’s not resolving.",repeated_confusion
+"Reset the password as advised, but the login screen keeps saying the credentials are incorrect. I’ve waited 15 minutes.",repeated_confusion
+"I removed the external monitor and reconnected the internal one, but the display stays black. The earlier fix didn’t work.",repeated_confusion
+"I tried rebooting the laptop as you suggested, but the screen still freezes. Why won't it start?",repeated_confusion
+"I followed the steps to install the driver, yet the device still shows as not recognized. What else can I do?",repeated_confusion
+"I cleared the cache and restarted, but the keyboard keeps lagging. The instructions didn’t help at all.",repeated_confusion
+"I uninstalled the software you recommended, yet my monitor still displays a black screen. It’s the same problem.",repeated_confusion
+"I set the BIOS to default as advised, yet the tablet won’t boot past the splash screen. It’s the same issue.",repeated_confusion
+"I tried following the steps you sent, but the email still won’t send. Same issue every time. What else should I try?",repeated_confusion
+"Despite restarting the client, the email keeps bouncing back. The previous fix didn’t help at all. Need a new solution.",repeated_confusion
+"I kept the instructions you gave, yet my inbox still shows the same error message. I’m stuck. What’s next?",repeated_confusion
+"I followed the guidance, but the email still won’t appear in Sent Items. It’s the same problem as before. Any other ideas?",repeated_confusion
+"I’ve tried everything you suggested, but the email still fails to send. It’s not working; I’m not sure what else to do.",repeated_confusion
+"I followed the steps you sent, but still can't see my sent items. It’s like the mailbox is stuck.",repeated_confusion
+The instructions you gave didn’t fix the issue; I keep getting an error when trying to reply to emails.,repeated_confusion
+"I tried logging out and back in as you suggested, yet the inbox still shows no new messages.",repeated_confusion
+Your guidance didn’t resolve the problem; I still can’t attach files to outgoing emails.,repeated_confusion
+"Even after clearing the cache, the email client still crashes whenever I open it.",repeated_confusion
+"I followed the steps you sent, but my inbox still shows no new emails after the server restart.",repeated_confusion
+"Your guide says to clear the cache, yet my mailbox is still stuck at 404 errors when opening attachments.",repeated_confusion
+"I kept reapplying the domain settings you recommended, but the login prompt keeps popping up with an unknown error.",repeated_confusion
+"I reset the mailbox as instructed, but the spam filter is still blocking every email from our partner domain.",repeated_confusion
+"I reinstalled Outlook per your advice, but I still can't sync my calendar; the app keeps showing a connection timeout.",repeated_confusion
+"I followed the steps to set up my email signature, but it still shows the old one. The instructions didn’t fix it.",repeated_confusion
+"I’m still getting the same error when I try to send attachments; the guide said to update the driver, but nothing changed.",repeated_confusion
+"The tutorial said to clear my cache, but I did that and I still can’t access my corporate mailbox.",repeated_confusion
+"I’ve reinstalled Outlook as directed, yet the mailbox keeps refusing to connect. None of the previous fixes worked.",repeated_confusion
+"Even after following the troubleshooting steps, my emails keep bouncing back with the same error message.",repeated_confusion
+"I followed the reset link, but the email still won’t send. Can you help me again?",repeated_confusion
+I’m still stuck—adding the new SMTP server didn’t resolve the bounce errors. Re‑explain?,repeated_confusion
+"I tried the steps you sent, yet Outlook keeps showing a connection timeout. What next?",repeated_confusion
+"The password change worked, but I can’t log into Gmail. Please walk me through again.",repeated_confusion
+"I’ve re‑entered my credentials, but the mail queue shows pending. Can you clarify the issue?",repeated_confusion
+"I already followed the steps you sent, but the software still crashes when I try to open it.",repeated_confusion
+"I tried logging in with the new password, but the system keeps saying my account is locked.",repeated_confusion
+"I opened the support link you provided, but the instructions were identical to what I already did.",repeated_confusion
+"Despite resetting my password, I still can't access the shared drive.",repeated_confusion
+"I followed the tutorial, but the software still shows an error message about missing libraries.",repeated_confusion
+"I followed the steps you sent, but the software still crashes every time I open it. Please help!",repeated_confusion
+"I opened the portal as instructed, but I still get a ‘not authorized’ error. Why isn’t this working?",repeated_confusion
+"I’ve reinstalled the application and cleared the cache, yet the login prompt keeps appearing. I’m at a loss.",repeated_confusion
+"Despite resetting my password and rebooting, the shared drive remains inaccessible. This has been happening for two days now.",repeated_confusion
+"I kept the software up to date, but the error message about missing dependencies keeps popping up. I’ve tried everything you suggested.",repeated_confusion
+"I tried logging in with the new VPN, but it still says my credentials are wrong. Same issue as yesterday.",repeated_confusion
+"I followed the steps to reset the software license, but the app still prompts me for activation. It's exactly the same problem.",repeated_confusion
+"I’ve reinstalled the client as instructed, yet the error message about missing certificates keeps popping up. Nothing changed.",repeated_confusion
+"I used the provided link to update the driver, but the device still shows an unsupported firmware error. It’s the same as before.",repeated_confusion
+"I’ve cleared the cache and rebooted, but the application still refuses to connect to the server, just like last week.",repeated_confusion
+"I already tried resetting the VPN profile as suggested, but the connection keeps dropping after a few minutes.",repeated_confusion
+Following the steps to reinstall the software didn’t resolve the error; the same crash screen still pops up.,repeated_confusion
+"I cleared the cache and re-entered the credentials, yet the login page keeps asking for two‑factor verification again.",repeated_confusion
+"I followed the troubleshooting guide for the application, but it still refuses to launch and reports a missing DLL.",repeated_confusion
+"I deleted the user profile and created a new one, yet the access rights haven’t changed—still cannot edit the shared document.",repeated_confusion
+"I followed the steps you sent, but the app still says I’m not logged in. I keep getting the same error message.",repeated_confusion
+"Re‑started my PC and cleared the cache, but the software refuses to launch. The same warning appears every time.",repeated_confusion
+"I copied the instructions exactly, yet the remote desktop keeps disconnecting after a few seconds. Nothing works.",repeated_confusion
+"Tried updating the driver as advised, but the error persists. Still no access to the shared drive.",repeated_confusion
+"I followed the guide to reset my access, but the portal still says my credentials are invalid. It’s the same problem.",repeated_confusion
+I just got an error that my account is locked after too many attempts.,normal
+"I logged in today and it says my password expired, can you reset it?",normal
+I can’t access the VPN because my credentials aren’t accepted.,normal
+My workstation says I’m not an authorized user for the file server.,normal
+I received a prompt that my account is disabled; need help reactivating.,normal
+"I can’t log into my account after the password reset, the error says credentials are invalid.",normal
+"My workstation asks for a password that I just updated, but it keeps rejecting it.",normal
+I’m getting an authentication error when trying to access the intranet portal.,normal
+"The system says my login has expired, but I updated it yesterday.",normal
+"I forgot the new password I set during the security update, and I can’t sign in.",normal
+"I can’t log into my VPN. The system says my credentials are invalid, but I know I entered them correctly.",normal
+Forgot my account password; I need to reset it to access the project portal.,normal
+"When I attempt to sign in, the error message says my account is locked. Please unlock it.",normal
+"I’m able to log in on my phone, but my laptop keeps asking for a new password.",normal
+I received a notification that my login credentials expired; can you help me renew them?,normal
+I just logged in and my profile page shows as inactive. Can you check the account status?,normal
+My account password reset link is not working; the email says the link expired.,normal
+"I was able to log in earlier, but now it says my account is locked. Need help unlocking it.",normal
+"When I try to sign in, I get a 'wrong username' error even though I'm sure I typed it correctly.",normal
+The new VPN login portal shows my account as disabled after the recent security update.,normal
+"I can't log into my email account, the password prompt keeps timing out.",normal
+Just got a message that my account is locked after multiple failed login attempts.,normal
+My VPN credentials are not working; the connection drops immediately.,normal
+"I updated my password last night, but the system still asks for the old one.",normal
+"After the recent security patch, I'm unable to access the shared drive.",normal
+The office Wi‑Fi keeps dropping on my laptop after I move from room 3A to the conference room.,normal
+"I’m able to connect to the network, but the internet speed is unusually slow during video calls.",normal
+"My mobile hotspot works fine, yet the building Wi‑Fi shows no SSID when I scan from the cafeteria.",normal
+"After the recent firmware update, the Wi‑Fi network is now requiring a new security certificate that I don’t have.",normal
+"I can ping the gateway, but I’m unable to access any external websites from my desktop.",normal
+I just moved to the new office and the Wi‑Fi keeps disconnecting after a few minutes.,normal
+The laptop’s network adapter appears disabled in device manager; it won’t connect to the corporate VPN.,normal
+"After a brief outage, my Wi‑Fi signal is weak in the conference room and I can’t load the shared drive.",normal
+My wireless connection drops every time I start a video call; the router seems fine on other devices.,normal
+"The Wi‑Fi network is prompting for credentials repeatedly, even though I’m already logged in.",normal
+I just moved to the new office and my Wi‑Fi keeps dropping after the 3rd floor.,normal
+The guest network appears to be offline; I can't connect to the printer.,normal
+"My laptop keeps reconnecting to the old Wi‑Fi, even after I changed the SSID.",normal
+I noticed the Wi‑Fi signal is weak in the conference room during meetings.,normal
+"After a software update, my network adapter stopped detecting any wireless networks.",normal
+My laptop keeps dropping the Wi‑Fi after a short while. It reconnects but then disconnects again.,normal
+The office Wi‑Fi signal is weak in the conference room; presentations keep buffering.,normal
+"I can’t connect to the VPN when I’m on the new Wi‑Fi network, but it works on the old one.",normal
+"When I open my browser, the page loads but then says 'No Internet' even though Wi‑Fi shows connected.",normal
+I just moved to a new desk and the Wi‑Fi speed is much slower than before.,normal
+My office Wi‑Fi keeps disconnecting at 3 pm. I can still send emails but web browsing is spotty.,normal
+"The new conference room router was installed yesterday, but I can't connect my laptop. The network name appears, but login fails.",normal
+I noticed my Wi‑Fi signal drops when the HVAC turns on. Could you check the router placement?,normal
+"The VPN works fine, but the internal file server is unreachable over Wi‑Fi. Other devices connect without issue.",normal
+My desk Wi‑Fi is slow during the day. I think the bandwidth allocation might need adjustment.,normal
+"I just installed the VPN client, but it keeps showing a connection timeout error.",normal
+My VPN disconnects every 10 minutes during my remote work session; I need it to stay stable.,normal
+"I added my new office Wi‑Fi, but the VPN keeps asking for a proxy server address.",normal
+Can anyone explain why the VPN shows 'authentication failed' when I use my company credentials?,normal
+"After updating the OS, the VPN no longer recognizes my saved profile. It keeps prompting for a username and password.",normal
+VPN connection drops whenever I switch Wi‑Fi networks. Is there a way to make it more stable?,normal
+"I installed the new VPN client, but it keeps asking for a certificate that I don't have.",normal
+The VPN logs show a handshake timeout after 30 seconds when I try to access the remote server.,normal
+I noticed the VPN speed is significantly slower after the recent policy update. Could you check the bandwidth limits?,normal
+"When I reconnect to the VPN after a laptop reboot, it automatically locks the screen and I lose my session.",normal
+VPN connection drops every 10 minutes during video calls.,normal
+I added a new device but the VPN keeps asking for credentials.,normal
+VPN is slow after the recent OS update.,normal
+Can I set the VPN to reconnect automatically when the network changes?,normal
+The VPN client shows an error: ‘TLS handshake failed’.,normal
+"I just installed the VPN client, but it keeps timing out after a few minutes.",normal
+"The VPN connection drops whenever I open the remote desktop, can you suggest a fix?",normal
+"I’m having trouble connecting to the corporate VPN on my laptop, it shows a generic error message.",normal
+"After updating my OS, the VPN no longer authenticates with my credentials.",normal
+The VPN is slow when accessing the file server; does anyone know if bandwidth limits are in place?,normal
+"I just connected to the VPN, but I'm seeing a DNS resolution error when opening internal sites.",normal
+The VPN keeps disconnecting after a few minutes of inactivity while I work from home.,normal
+"I updated my operating system, and now the VPN client no longer starts automatically.",normal
+"I can connect to the VPN, but my remote desktop session times out immediately.",normal
+"The VPN shows a 'connection failed' message, even though my credentials are correct.",normal
+My laptop screen flickers intermittently when I open Excel. Any quick fix?,normal
+The new monitor I swapped in keeps turning off after a few minutes of use.,normal
+"I noticed the printer’s ink cartridge is low, but the status light still says full.",normal
+My keyboard backlight stays on even though the laptop is in power-saving mode.,normal
+The external hard drive I use for backups shows a read error after a short disconnect.,normal
+My laptop battery drains quickly after I install the new update. Is there a way to optimize power settings?,normal
+I accidentally set my monitor to 1920x1080 instead of 2560x1440 and it looks blurry. How do I revert?,normal
+The new docking station keeps disconnecting from my laptop. Is there a firmware update?,normal
+My external hard drive shows as offline in File Explorer. It’s been working fine yesterday.,normal
+I added a new USB device and the system asks for driver installation every time I plug it in.,normal
+"My laptop screen flickers when I open Excel, but otherwise works fine. Need help.",normal
+The new monitor I swapped in keeps disconnecting from the HDMI port.,normal
+"I accidentally unplugged the external hard drive, now it’s not detected. Any quick fix?",normal
+My keyboard backlight turns off after 5 minutes of inactivity. Is that normal?,normal
+The printer I set up is printing duplicate pages each time I send a job.,normal
+"My laptop screen flickers intermittently after updates, but everything else works fine.",normal
+"I can’t remember the Wi‑Fi password, but I need to connect the new monitor.",normal
+The new headset I bought keeps disconnecting when I move the laptop.,normal
+"My desktop keyboard is stuck on a single key, but typing normally otherwise.",normal
+"I installed a new printer, but the driver isn’t recognized by the system.",normal
+My laptop screen flickers when I open Excel. Is this a driver problem?,normal
+"I installed a new peripheral, but my keyboard keys are unresponsive after reboot.",normal
+The monitor on my workstation displays a white screen after a power outage.,normal
+"I updated the OS, now the Wi‑Fi adapter shows 'not connected' in the taskbar.",normal
+My external hard drive keeps disconnecting randomly during file transfers.,normal
+I just set up my new work email account and it’s not syncing with Outlook. Can you check the server settings?,normal
+My email client keeps showing a “connection timed out” error when I try to send a message. Any idea why?,normal
+I noticed that emails from a certain domain are landing in the spam folder. Should I whitelist that domain?,normal
+"I received an auto-reply that says my mailbox is full, but I don’t think I’ve hit the limit. Could you verify my quota?",normal
+I can’t see the sent folder after sending a message. It looks like the email didn’t go through.,normal
+My Outlook client is not syncing new emails from the server.,normal
+I just received an error when trying to send a large attachment via Gmail.,normal
+Can you explain why my inbox is full and I can't receive new messages?,normal
+The email notification sound stopped working in my browser client.,normal
+I need to change the display name in my email signature for a client meeting tomorrow.,normal
+"My Outlook is not syncing with the server, and I can't see my calendar events.",normal
+I keep getting a delivery failure notice when I send an email to external domains.,normal
+I accidentally clicked on a phishing link in an email; my account feels compromised.,normal
+Can I set a rule to automatically move newsletters to a separate folder?,normal
+The email attachment preview doesn't load in the new Outlook web app.,normal
+I just received an email with a suspicious attachment; can you check if it’s safe to open?,normal
+My inbox is full; could you help me delete old emails to free up space?,normal
+I’m unable to send large attachments through Outlook; is there a size limit I should be aware of?,normal
+The email server shows a delayed delivery for messages sent to external domains.,normal
+I accidentally archived an important email; can we recover it from the archive?,normal
+"I just sent an email with the quarterly report but it bounced back, could be a typo in the address.",normal
+My email client keeps crashing every time I try to open a large attachment.,normal
+I accidentally archived my inbox and can't find the meeting agenda email from last week.,normal
+The calendar invite I sent for the client call was marked as declined by the recipient.,normal
+I noticed my sent folder has missing copies of emails I recently dispatched.,normal
+I need to install the new version of the reporting software on my workstation. Is that possible?,normal
+My laptop’s VPN connection keeps dropping after the update. I can’t access the intranet. Any quick fix?,normal
+Can I get the latest version of the project management app for my tablet?,normal
+The desktop application keeps throwing a license error. I’m unable to use it for today’s meeting.,normal
+I’m trying to set up remote desktop but keep receiving an authentication failure message.,normal
+"I just installed the new project management tool, but it keeps crashing when I try to open the dashboard.",normal
+Can anyone help me connect my laptop to the VPN using the new authentication method?,normal
+"I updated my office software, but the license key is no longer recognized. I need to re-activate.",normal
+The spreadsheet app is lagging after the latest patch. Any tips to improve performance?,normal
+I’m unable to access the shared drive from my tablet after the recent OS update.,normal
+"I just installed the new analytics software, but the launch icon keeps flickering on my desktop.",normal
+"When I try to open the shared drive, I get an access denied message, even though I’m logged in with my company account.",normal
+"The latest patch for the document editor was applied last week, but now I can't save files to the cloud folder.",normal
+"My laptop starts a software update automatically at 2 AM, which interrupts my workflow. I'd like to disable the auto‑update.",normal
+I can’t launch the virtual meeting app on my tablet; it crashes immediately after the splash screen.,normal
+I installed the new design software but it keeps crashing on launch.,normal
+The VPN client shows a connection timeout even though my Wi‑Fi is fine.,normal
+I updated the document editor to the latest version and it no longer syncs with OneDrive.,normal
+"The software license key I entered appears invalid, but I double‑checked it against our records.",normal
+"My workstation’s screen resolution is set to 800x600 after the recent driver update, and I can't adjust it.",normal
+"I just installed the new version of the document editor, but it keeps crashing on startup.",normal
+Can you tell me how to access the shared drive on the new VPN? I can’t see it in Explorer.,normal
+"I updated my email client, and now I’m unable to send messages to external domains.",normal
+The latest patch for the accounting software added a bug that hides the export button.,normal
+I’m having trouble logging into the remote desktop after the recent OS update.,normal

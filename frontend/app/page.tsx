@@ -2,20 +2,45 @@
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 
-type Message = { role: "ai" | "user" | "system"; text: string; confidence?: number; escalate?: boolean; label?: string; labelConfidence?: number; escalationReason?: string; degraded?: boolean; ticketId?: string; ticketSeverity?: string };
-type Meta = { confidence?: number; predicted_escalation_label?: string; predicted_escalation_confidence?: number; escalation_reason?: string; degraded?: boolean; predicted_escalation_degraded?: boolean; ticket_id?: string; ticket_severity?: string };
+type Message = { role: "ai" | "user" | "system"; text: string; escalate?: boolean; intent?: string; intentRaw?: string; intentConfidence?: number; emotion?: string; emotionConfidence?: number; risk?: number; escalationReason?: string; degraded?: boolean; ticketId?: string; ticketSeverity?: string };
+type Meta = { intent?: string; intent_raw?: string; intent_confidence?: number; emotion?: string; emotion_confidence?: number; risk?: number; classifier_degraded?: boolean; escalation_reason?: string; degraded?: boolean; ticket_id?: string; ticket_severity?: string };
 type SessionSummary = { session_id: string; stage: string; preview: string; updated_at: string };
 type SessionState = { session_id: string; stage: string; sop_gaps: string[]; qualification: Record<string, string>; meta: Meta; messages: Message[] };
 
-const labels: Record<string, string> = { faq: "AI support", qualify: "Information gathering", escalated: "Human support required", summary: "Session summary" };
+const labels: Record<string, string> = { faq: "AI support", qualify: "Information gathering", troubleshoot: "Troubleshooting", escalated: "Human support required", summary: "Session summary" };
 const categories = ["Account & Password", "Wi-Fi / Network", "VPN", "Device Issues", "Email", "Software & Access"];
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8000/ws";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || WS_URL.replace(/^ws/, "http").replace(/\/ws$/, "");
 const SESSION_STORAGE_KEY = "closira.session_id";
 
-function confidenceTone(value = 0) { return value >= .75 ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : value >= .5 ? "bg-amber-50 text-amber-800 ring-amber-200" : "bg-red-50 text-red-800 ring-red-200"; }
-function stageTone(stage: string) { return stage === "escalated" ? "bg-red-50 text-red-800 ring-red-200" : stage === "summary" ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : stage === "qualify" ? "bg-amber-50 text-amber-800 ring-amber-200" : "bg-teal-50 text-teal-800 ring-teal-200"; }
+function stageTone(stage: string) { return stage === "escalated" ? "bg-red-50 text-red-800 ring-red-200" : stage === "summary" ? "bg-emerald-50 text-emerald-800 ring-emerald-200" : stage === "qualify" || stage === "troubleshoot" ? "bg-amber-50 text-amber-800 ring-amber-200" : "bg-teal-50 text-teal-800 ring-teal-200"; }
 function severityTone(severity = "") { return severity === "critical" ? "bg-red-50 text-red-800 ring-red-200" : severity === "high" ? "bg-orange-50 text-orange-800 ring-orange-200" : severity === "low" ? "bg-slate-100 text-slate-600 ring-slate-200" : "bg-amber-50 text-amber-800 ring-amber-200"; }
+const RISK_ESCALATE = 0.75;
+function riskTone(value = 0) { return value >= RISK_ESCALATE ? "bg-red-500" : value >= .5 ? "bg-orange-400" : value >= .25 ? "bg-amber-300" : "bg-emerald-400"; }
+function pretty(label?: string) { return label ? label.replaceAll("_", " ") : "—"; }
+function pct(value?: number) { return value === undefined || value === null ? "" : ` · ${Math.round(value * 100)}%`; }
+// "slot_answer": intent isn't classified for answers to a question; "uncertain": below the confidence bar, so routing ignores it.
+function intentText(intent?: string, raw?: string, confidence?: number) {
+  if (intent === "slot_answer") return "answer to question";
+  if (intent === "uncertain") return `uncertain${raw ? ` (${pretty(raw)}${pct(confidence)})` : ""}`;
+  return `${pretty(intent)}${pct(confidence)}`;
+}
+function RiskBar({ value }: { value?: number }) {
+  const v = Math.max(0, Math.min(1, value ?? 0));
+  return (
+    <div>
+      <div className="flex items-center justify-between text-sm">
+        <span className="text-slate-500">Escalation risk</span>
+        <span className="text-xs font-semibold tabular-nums text-slate-700">{value === undefined || value === null ? "—" : `${Math.round(v * 100)}%`}</span>
+      </div>
+      <div className="relative mt-2 h-2 overflow-hidden rounded-full bg-slate-100" role="meter" aria-label="Escalation risk" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(v * 100)}>
+        <div className={`h-full rounded-full transition-all ${riskTone(v)}`} style={{ width: `${v * 100}%` }} />
+        <div className="absolute inset-y-0 w-px bg-slate-500" style={{ left: `${RISK_ESCALATE * 100}%` }} title="Escalation threshold" />
+      </div>
+      <div className="mt-1 text-right text-[10px] text-slate-400">threshold {Math.round(RISK_ESCALATE * 100)}%</div>
+    </div>
+  );
+}
 function Icon({ name }: { name: string }) { const icons: Record<string, string> = { shield: "◈", spark: "✦", user: "●", send: "↑", plus: "+", device: "▣" }; return <span aria-hidden="true">{icons[name]}</span>; }
 function Card({ title, children, warning = false }: { title: string; children: React.ReactNode; warning?: boolean }) { return <section className={`overflow-hidden rounded-xl border bg-white shadow-sm ${warning ? "border-red-200" : "border-slate-200"}`}><h2 className={`border-b px-4 py-3 text-[11px] font-semibold uppercase tracking-[.12em] ${warning ? "border-red-100 bg-red-50 text-red-800" : "border-slate-100 bg-slate-50 text-slate-600"}`}>{title}</h2><div className="p-4">{children}</div></section>; }
 
@@ -93,12 +118,15 @@ export default function Home() {
           {
             role: "ai",
             text: payload.message,
-            confidence: payload.meta?.confidence,
             escalate: payload.meta?.escalate,
-            label: payload.meta?.predicted_escalation_label,
-            labelConfidence: payload.meta?.predicted_escalation_confidence,
+            intent: payload.meta?.intent,
+            intentRaw: payload.meta?.intent_raw,
+            intentConfidence: payload.meta?.intent_confidence,
+            emotion: payload.meta?.emotion,
+            emotionConfidence: payload.meta?.emotion_confidence,
+            risk: payload.meta?.risk,
             escalationReason: payload.meta?.escalation_reason,
-            degraded: Boolean(payload.meta?.degraded || payload.meta?.predicted_escalation_degraded),
+            degraded: Boolean(payload.meta?.degraded || payload.meta?.classifier_degraded),
             ticketId: payload.meta?.ticket_id,
             ticketSeverity: payload.meta?.ticket_severity,
           },
@@ -106,7 +134,8 @@ export default function Home() {
         setStage(payload.stage);
         setGaps(payload.sop_gaps || []);
         setQualification(payload.qualification || {});
-        setMeta(payload.meta || {});
+        // Follow-up bot messages carry no classification fields; keep the turn's tags in the sidebar.
+        setMeta((old) => ({ ...old, ...(payload.meta || {}) }));
       } else if (payload.type === "system") {
         setMessages((old) => [...old, { role: "system", text: payload.message }]);
       }
@@ -240,20 +269,26 @@ export default function Home() {
                     <div className="mb-2 text-xs font-bold uppercase tracking-[.09em] text-red-700">Human IT Support Required</div>
                   )}
                   {message.text}
-                  {message.role === "ai" && message.confidence !== undefined && (
+                  {message.role === "ai" && (message.intent || message.ticketId || message.degraded) && (
                     <div className="mt-2 flex flex-wrap gap-1.5">
-                      <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ring-1 ring-inset ${confidenceTone(message.confidence)}`}>
-                        Reply confidence {Math.round(message.confidence * 100)}%
-                      </span>
-                      {message.label && (
+                      {message.intent && (
                         <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold capitalize text-slate-600">
-                          {message.label.replaceAll("_", " ")}
-                          {message.labelConfidence !== undefined && ` · Routing confidence ${Math.round(message.labelConfidence * 100)}%`}
+                          {intentText(message.intent, message.intentRaw, message.intentConfidence)}
+                        </span>
+                      )}
+                      {message.emotion && (
+                        <span className="inline-block rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold capitalize text-slate-600">
+                          {pretty(message.emotion)}{pct(message.emotionConfidence)}
+                        </span>
+                      )}
+                      {message.risk !== undefined && message.risk !== null && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                          <i className={`size-1.5 rounded-full ${riskTone(message.risk)}`} /> Risk {Math.round(message.risk * 100)}%
                         </span>
                       )}
                       {message.degraded && (
                         <span className="inline-block rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-semibold text-amber-700 ring-1 ring-inset ring-amber-200">
-                          Generated with reduced confidence
+                          Summary generated from fallback
                         </span>
                       )}
                       {message.ticketId && (
@@ -324,27 +359,27 @@ export default function Home() {
             </Card>
 
             <Card title="AI classification">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-slate-500">Reply confidence</span>
-                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${confidenceTone(meta.confidence)}`}>
-                  {meta.confidence === undefined ? "—" : `${Math.round(meta.confidence * 100)}%`}
+              <div className="flex items-center justify-between gap-3 text-sm">
+                <span className="text-slate-500">Intent</span>
+                <span className="max-w-[62%] rounded-full bg-slate-100 px-2.5 py-1 text-right text-xs font-medium capitalize text-slate-700">
+                  {intentText(meta.intent, meta.intent_raw, meta.intent_confidence)}
                 </span>
               </div>
-              <div className="mt-3 flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-sm">
-                <span className="text-slate-500">Routing label</span>
-                <span className="max-w-[58%] rounded-full bg-slate-100 px-2.5 py-1 text-right text-xs font-medium capitalize text-slate-700">
-                  {(meta.predicted_escalation_label || "normal").replaceAll("_", " ")}
+              <div className="mt-3 flex items-center justify-between gap-3 text-sm">
+                <span className="text-slate-500">Emotion</span>
+                <span className="max-w-[62%] rounded-full bg-slate-100 px-2.5 py-1 text-right text-xs font-medium capitalize text-slate-700">
+                  {pretty(meta.emotion)}{pct(meta.emotion_confidence)}
                 </span>
               </div>
-              <div className="mt-3 flex items-center justify-between text-sm">
-                <span className="text-slate-500">Routing confidence</span>
-                <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset ${confidenceTone(meta.predicted_escalation_confidence)}`}>
-                  {meta.predicted_escalation_confidence === undefined ? "—" : `${Math.round(meta.predicted_escalation_confidence * 100)}%`}
-                </span>
+              <div className="mt-3 border-t border-slate-100 pt-3">
+                <RiskBar value={meta.risk} />
               </div>
+              {meta.classifier_degraded && (
+                <p className="mt-2 text-[11px] text-amber-700">Classifier unavailable — keyword rules only.</p>
+              )}
             </Card>
 
-            <Card title="Employee / issue / device information">
+            <Card title="Issue details">
               <div className="max-h-40 overflow-y-auto">
                 {Object.keys(qualification).length ? (
                   Object.entries(qualification).map(([key, value]) => (

@@ -1,9 +1,9 @@
-"""Regression tests for bugs fixed in agent.py's LangGraph workflow.
+"""Regression tests for bugs fixed in the support workflow (now pipeline.py).
 
-These exercise pure state transitions on the graph nodes directly (no
-FastAPI/WebSocket layer, no real Postgres, no real Groq calls). Where a node
-would normally call Groq or Postgres, the call is monkeypatched so the suite
-runs fast and offline.
+These exercise pure state transitions on the pipeline steps directly (no
+FastAPI/WebSocket layer, no real Postgres, no real Groq calls, no ML model).
+Where a step would normally call Groq, Postgres or the classifier, the call
+is monkeypatched so the suite runs fast and offline.
 """
 
 import json
@@ -11,190 +11,192 @@ import sys
 from pathlib import Path
 
 import pytest
-from langchain_core.messages import AIMessage, HumanMessage
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))  # repo root, so `backend` is importable
 
-from backend import agent
+from backend import pipeline
+
+
+def human(text):
+    return {"role": "user", "content": text}
+
+
+def ai(payload):
+    return {"role": "assistant", "content": json.dumps(payload)}
 
 
 def make_state(**overrides):
     """A full AgentState seeded from get_initial_state(), with overrides applied."""
-    state = agent.get_initial_state("test-session-id")
+    state = pipeline.get_initial_state("test-session-id")
     state.update(overrides)
     return state
+
+
+def prediction(intent="information_request", emotion="neutral", intent_conf=0.9, emotion_conf=0.9):
+    return {"intent": intent, "intent_confidence": intent_conf, "intent_probs": {intent: intent_conf},
+            "emotion": emotion, "emotion_confidence": emotion_conf, "emotion_probs": {emotion: emotion_conf},
+            "degraded": False}
 
 
 @pytest.fixture(autouse=True)
 def _no_external_side_effects(monkeypatch):
     """Every test in this file is a pure state-transition test: never touch the
-    real database or the real decision_log.json file on disk, regardless of
-    which code path a given test happens to hit."""
-    monkeypatch.setattr(agent, "record_escalation", lambda *a, **k: None)
-    monkeypatch.setattr(agent, "log_decision", lambda *a, **k: None)
-    monkeypatch.setattr(agent, "create_ticket", lambda *a, **k: None)
+    real database, the decision_log.json file, or the local ML model."""
+    monkeypatch.setattr(pipeline, "record_escalation", lambda *a, **k: None)
+    monkeypatch.setattr(pipeline, "log_decision", lambda *a, **k: None)
+    monkeypatch.setattr(pipeline, "create_ticket", lambda *a, **k: None)
+    monkeypatch.setattr(pipeline, "classify_message", lambda text: prediction())
+    monkeypatch.setattr(pipeline, "llm_extract", lambda system, messages: {})
+    monkeypatch.setattr(pipeline, "llm_select", lambda system, messages: {})
 
 
-# ── 1. escalation_result() must read the last HUMAN message ─────────────────
+# ── 1. escalation must read the last HUMAN message ──────────────────────────
 
-def test_escalation_result_uses_last_human_message_not_appended_ai_message():
-    """qualify_node appends its own closing AI reply to state["messages"]
-    before handing off to summary_node. escalation_result() (the safety-net
-    check summary_node also runs) must still evaluate the last HUMAN message
-    for escalation keywords — not that trailing assistant reply.
-
-    Under the old bug, escalation_result() read state["messages"][-1]
-    blindly, which after qualify_node's append is the assistant's bland
-    "Thank you, that helps..." text (no escalation keywords) — so this
-    scenario would have silently failed to escalate.
-    """
+def test_escalation_uses_last_human_message_not_appended_ai_message():
+    """An assistant reply appended after the human message this turn must not
+    hide the human message's escalation keywords. Under the old bug the check
+    read state["messages"][-1] blindly — the bland assistant text."""
     human_text = "This is unacceptable, I need to speak to a manager right now"
-    assistant_text = json.dumps({
+    assistant_text = {
         "response": "Thank you, that helps. I have your employee information, "
-                     "issue details, and device or system details. I'll prepare "
-                     "a short session summary for Human IT Support.",
-        "confidence": 1.0,
-        "escalate": False,
-        "escalation_reason": None,
-        "stage_complete": True,
-        "sop_gap": False,
-        "degraded": False,
-    })
+                    "issue details, and device or system details. I'll prepare "
+                    "a short session summary for Human IT Support.",
+        "confidence": 1.0, "escalate": False, "escalation_reason": None,
+        "stage_complete": True, "sop_gap": False, "degraded": False,
+    }
     state = make_state(
-        messages=[HumanMessage(content=human_text), AIMessage(content=assistant_text)],
-        intent_label="normal",
-        intent_confidence=0.0,
-        intent_source_message=human_text,
+        messages=[human(human_text), ai(assistant_text)],
+        intent_label="information_request", intent_confidence=0.0, intent_source_message=human_text,
     )
 
-    result = agent.escalation_result(state)
+    state, action, reason, trigger = pipeline.decide(state)
+    result = pipeline.escalate_handler(state, reason, trigger)
 
-    assert result is not None, "expected escalation triggered by the human message's keywords"
+    assert action == "escalate", "expected escalation triggered by the human message's keywords"
     assert result["stage"] == "escalated"
     assert result["escalation_reason"] == "Angry sentiment detected: 'unacceptable'"
 
 
-# ── 2. decision_node's repeat counter ────────────────────────────────────────
+# ── 2. the repeat counter in decide() ───────────────────────────────────────
 
-def test_decision_node_repeat_count_increments_then_resets_on_action_change(monkeypatch):
-    """Documents the ACTUAL behavior of decision_node's loop guard: it tracks
-    whether the SAME action was chosen on consecutive turns
-    (`action == last_decision` in agent.py), and resets the moment a
-    different action is chosen.
-
-    Note: this is keyed purely on repeated *action choice*, not on whether
-    state["qualification"] grew between turns — the two usually move
-    together in the normal 3-question qualify flow, but they are not the
-    same signal. Flagged separately outside this test suite.
-    """
-    actions = iter([
-        {"action": "qualify", "reasoning": "need name"},
-        {"action": "qualify", "reasoning": "need issue description"},
-        {"action": "faq", "reasoning": "user asked something answerable from SOP"},
-    ])
-    monkeypatch.setattr(agent, "llm_call", lambda *a, **k: next(actions))
-
+def test_decide_repeat_count_increments_then_resets_on_route_change():
+    """The loop guard tracks whether the SAME route was chosen on consecutive
+    turns and resets the moment a different route is chosen. It is keyed on
+    the repeated route, not on whether state["qualification"] grew."""
     state = make_state(
-        stage="qualify",
-        last_decision="",
-        decision_repeat_count=0,
-        qualification={},
-        messages=[HumanMessage(content="hello")],
-        intent_label="normal",
-        intent_confidence=0.0,
-        intent_source_message="hello",
+        stage="qualify", last_decision="", decision_repeat_count=0, qualification={},
+        messages=[human("hello")], intent_label="chit_chat", intent_confidence=0.0, intent_source_message="hello",
     )
 
-    state = agent.decision_node(state)
+    state, action, *_ = pipeline.decide(state)
+    assert action == "qualify"
     assert state["last_decision"] == "qualify"
     assert state["decision_repeat_count"] == 1
 
-    # A real answer was recorded between turns (qualification grew), but the
-    # guard still increments because the chosen action ("qualify") repeated.
+    # A real answer was recorded between turns, but the guard still
+    # increments because the chosen route ("qualify") repeated.
     state["qualification"] = {"answer_1": "Jordan Smith"}
-    state = agent.decision_node(state)
+    state, action, *_ = pipeline.decide(state)
     assert state["decision_repeat_count"] == 2
 
-    # Action changes to "faq" -> counter resets to 1.
-    state = agent.decision_node(state)
+    # Route changes to "faq" -> counter resets to 1.
+    state["stage"] = "faq"
+    state, action, *_ = pipeline.decide(state)
+    assert action == "faq"
     assert state["last_decision"] == "faq"
     assert state["decision_repeat_count"] == 1
 
 
-# ── 3. classifier_escalation() must not trust a stale cached label ──────────
+def test_decide_forces_escalation_after_repeat_limit():
+    state = make_state(stage="faq", last_decision="faq", decision_repeat_count=pipeline.MAX_REPEAT_DECISIONS - 1,
+                       messages=[human("how do I connect to wifi")])
+    state, action, reason, trigger = pipeline.decide(state)
+    assert action == "escalate"
+    assert trigger == "turn_limit"
 
-def test_classifier_escalation_reclassifies_when_source_message_is_stale(monkeypatch):
+
+# ── 3. classify() must not trust a stale cached prediction ──────────────────
+
+def test_classify_reclassifies_when_source_message_is_stale(monkeypatch):
     calls = []
 
     def fake_classify(text):
         calls.append(text)
-        return {"label": "explicit_human_request", "confidence": 0.95}
+        return prediction(intent="complaint", emotion="angry", intent_conf=0.95, emotion_conf=0.95)
 
-    monkeypatch.setattr(agent, "classify_employee_message", fake_classify)
+    monkeypatch.setattr(pipeline, "classify_message", fake_classify)
 
     current_text = "I want to speak to a human agent please"
     state = make_state(
-        messages=[HumanMessage(content=current_text)],
-        intent_label="frustrated",  # stale label cached from an earlier turn
-        intent_confidence=0.55,     # stale confidence, below the escalation threshold
+        messages=[human(current_text)],
+        intent_label="chit_chat",   # stale label cached from an earlier turn
+        intent_confidence=0.55,
+        risk=0.1,
         intent_source_message="an old message from a previous turn",  # does NOT match current_text
     )
 
-    should_escalate, reason, response, trigger, label, confidence = agent.classifier_escalation(state)
+    state = pipeline.classify(state)
+    state, action, reason, trigger = pipeline.decide(state)
 
     assert calls == [current_text], "expected a fresh classification of the CURRENT human message"
-    assert label == "explicit_human_request"
-    assert confidence == 0.95
-    assert should_escalate is True
-    assert trigger == "both"  # model AND the "human agent" keyword both fire
+    assert state["intent_label"] == "complaint"
+    assert state["emotion_label"] == "angry"
+    assert state["intent_confidence"] == 0.95
+    assert action == "escalate"
+    assert trigger == "both"  # model risk AND the "human agent" keyword both fire
 
 
-def test_classifier_escalation_reuses_cache_when_source_message_matches(monkeypatch):
+def test_classify_reuses_cache_when_source_message_matches(monkeypatch):
     calls = []
-    monkeypatch.setattr(
-        agent, "classify_employee_message",
-        lambda text: calls.append(text) or {"label": "normal", "confidence": 0.1},
-    )
+    monkeypatch.setattr(pipeline, "classify_message", lambda text: calls.append(text) or prediction())
 
     current_text = "my monitor won't turn on"
     state = make_state(
-        messages=[HumanMessage(content=current_text)],
-        intent_label="normal",
-        intent_confidence=0.42,
+        messages=[human(current_text)],
+        intent_label="issue_report", intent_confidence=0.42, risk=0.2,
         intent_source_message=current_text,  # matches -> reuse cache, do not reclassify
     )
 
-    should_escalate, reason, response, trigger, label, confidence = agent.classifier_escalation(state)
+    state = pipeline.classify(state)
+    state, action, *_ = pipeline.decide(state)
 
-    assert calls == [], "should not reclassify when the cached label already matches the current message"
-    assert label == "normal"
-    assert confidence == 0.42
-    assert should_escalate is False
+    assert calls == [], "should not reclassify when the cached prediction already matches the current message"
+    assert state["intent_label"] == "issue_report"
+    assert state["intent_confidence"] == 0.42
+    assert action != "escalate"
 
 
-# ── 4. qualify_node stops at 3 answers and hands off to summary ─────────────
+# ── 4. filling the last slot stops asking and moves on ──────────────────────
+# (was: "qualify stops at 3 answers and hands off to summary" — the fixed
+# 3-question script is now slot filling, and a ticket waits until the SOP
+# self-help steps have been tried.)
 
-def test_qualify_node_completes_after_third_answer_and_goes_to_summary():
-    third_answer = "Dell laptop, Windows 11, error code 0x80070005"
+def test_qualify_handler_stops_after_last_slot_and_offers_sop_steps():
+    last_answer = "Dell laptop, Windows 11"
     state = make_state(
         stage="qualify",
         qualification_started=True,
+        pending_slot="device_os",
         qualification={
-            "answer_1": "Jordan Smith",
-            "answer_2": "VPN keeps disconnecting, blocking my work",
+            "requester": "Jordan Smith, E1234",
+            "issue_category": "vpn",
+            "problem_details": "VPN connects and then drops every few minutes",
+            "error_message": "error 809",
+            "impact": "I can't join client calls",
         },
-        messages=[HumanMessage(content=third_answer)],
-        intent_label="normal",
-        intent_confidence=0.0,
-        intent_source_message=third_answer,
+        messages=[human(last_answer)],
+        intent_source_message=last_answer,
     )
 
-    result = agent.qualify_node(state)
+    result = pipeline.qualify_handler(state)
 
-    assert result["stage"] == "summary"
-    assert result["stage"] != "faq"
-    assert len(result["qualification"]) == 3
-    assert result["qualification"]["answer_3"] == third_answer
+    assert result["stage"] == "troubleshoot"
+    assert result["stage"] not in ("faq", "qualify")
+    assert result["qualification"]["device_os"] == last_answer
+    assert all(result["qualification"].get(slot) for slot in pipeline.SLOTS)
+    assert result["pending_slot"] == ""
+    assert not result.get("ready_for_ticket")
 
-    payload = json.loads(result["messages"][-1].content)
-    assert payload["stage_complete"] is True
+    payload = json.loads(result["messages"][-1]["content"])
+    assert "approved VPN client" in payload["response"]
+    assert payload["ticket_id"] is None

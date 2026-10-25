@@ -1,0 +1,92 @@
+{
+  "intent": {
+    "test_rows": 4982,
+    "keyword_rules": {
+      "macro_f1": 0.5915856249931133,
+      "accuracy": 0.6025692492974709,
+      "per_class_f1": {
+        "information_request": 0.6160830090791181,
+        "issue_report": 0.4222873900293255,
+        "action_request": 0.44173140954495005,
+        "complaint": 0.9483204134366925,
+        "feedback": 0.7908396946564885,
+        "appreciation": 0.8303341902313625,
+        "chit_chat": 0.0915032679738562
+      },
+      "support": {
+        "information_request": 1697,
+        "issue_report": 755,
+        "action_request": 1090,
+        "complaint": 399,
+        "feedback": 373,
+        "appreciation": 402,
+        "chit_chat": 266
+      }
+    },
+    "tfidf_logreg": {
+      "macro_f1": 0.967127858121302,
+      "accuracy": 0.9608590927338418,
+      "per_class_f1": {
+        "information_request": 0.9562890276538805,
+        "issue_report": 0.9444081098757358,
+        "action_request": 0.9526871841984382,
+        "complaint": 0.9850374064837906,
+        "feedback": 0.9853528628495339,
+        "appreciation": 0.9887920298879203,
+        "chit_chat": 0.9573283858998145
+      },
+      "support": {
+        "information_request": 1697,
+        "issue_report": 755,
+        "action_request": 1090,
+        "complaint": 399,
+        "feedback": 373,
+        "appreciation": 402,
+        "chit_chat": 266
+      }
+    }
+  },
+  "emotion": {
+    "test_rows": 3998,
+    "keyword_rules": {
+      "macro_f1": 0.4026036255544483,
+      "accuracy": 0.5870435217608805,
+      "per_class_f1": {
+        "angry": 0.35260115606936415,
+        "frustrated": 0.09026128266033254,
+        "confused": 0.20930232558139536,
+        "sad": 0.4827586206896552,
+        "happy": 0.6198003327787022,
+        "neutral": 0.6608980355472404
+      },
+      "support": {
+        "angry": 187,
+        "frustrated": 360,
+        "confused": 104,
+        "sad": 236,
+        "happy": 1527,
+        "neutral": 1584
+      }
+    },
+    "tfidf_logreg": {
+      "macro_f1": 0.5393640072464917,
+      "accuracy": 0.6503251625812907,
+      "per_class_f1": {
+        "angry": 0.47029702970297027,
+        "frustrated": 0.36363636363636365,
+        "confused": 0.3926940639269406,
+        "sad": 0.578125,
+        "happy": 0.7639221045439016,
+        "neutral": 0.6675094816687737
+      },
+      "support": {
+        "angry": 187,
+        "frustrated": 360,
+        "confused": 104,
+        "sad": 236,
+        "happy": 1527,
+        "neutral": 1584
+      }
+    }
+  }
+}

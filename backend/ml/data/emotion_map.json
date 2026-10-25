@@ -1,0 +1,15 @@
+{
+  "_doc": "GoEmotions label -> Closira emotion. Only single-label GoEmotions examples are used. Labels under _drop (ambiguous for support triage) are excluded. neutral is downsampled to at most neutral_max_ratio x the largest other class.",
+  "emotions": ["angry", "frustrated", "confused", "sad", "happy", "neutral"],
+  "neutral_max_ratio": 2.0,
+  "goemotions": {
+    "angry": ["anger", "disgust"],
+    "frustrated": ["annoyance", "disapproval"],
+    "confused": ["confusion"],
+    "sad": ["sadness", "grief", "remorse", "disappointment"],
+    "happy": ["joy", "amusement", "gratitude", "love", "admiration", "approval", "excitement",
+              "optimism", "relief", "caring", "pride"],
+    "neutral": ["neutral"],
+    "_drop": ["curiosity", "desire", "embarrassment", "fear", "nervousness", "realization", "surprise"]
+  }
+}

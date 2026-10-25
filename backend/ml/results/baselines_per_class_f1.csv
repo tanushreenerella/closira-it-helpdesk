@@ -1,0 +1,16 @@
+task,label,support,keyword_f1,tfidf_logreg_f1
+intent,information_request,1697,0.6161,0.9563
+intent,issue_report,755,0.4223,0.9444
+intent,action_request,1090,0.4417,0.9527
+intent,complaint,399,0.9483,0.985
+intent,feedback,373,0.7908,0.9854
+intent,appreciation,402,0.8303,0.9888
+intent,chit_chat,266,0.0915,0.9573
+intent,MACRO,4982,0.5916,0.9671
+emotion,angry,187,0.3526,0.4703
+emotion,frustrated,360,0.0903,0.3636
+emotion,confused,104,0.2093,0.3927
+emotion,sad,236,0.4828,0.5781
+emotion,happy,1527,0.6198,0.7639
+emotion,neutral,1584,0.6609,0.6675
+emotion,MACRO,3998,0.4026,0.5394
