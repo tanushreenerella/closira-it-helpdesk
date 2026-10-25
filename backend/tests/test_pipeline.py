@@ -540,3 +540,80 @@ def test_unconfident_emotion_with_uncertain_intent_does_not_escalate(stubs):
     state = pipeline.run_turn(pipeline.get_initial_state("u2"), "wifi again")
     assert state["intent_label"] == "uncertain"
     assert state["stage"] != "escalated"
+
+
+# ── Risk-only escalation at the fix check takes the ticket path ─────────────
+
+FRUSTRATED = prediction("issue_report", "frustrated", p=0.9, emotion_p=0.9)  # emotion-only risk 0.75
+
+
+def test_risk_only_escalation_at_fix_check_asks_requester_then_tickets(stubs):
+    state = to_fix_check(stubs, "f1")
+    stubs["prediction"] = FRUSTRATED
+    state, bot = turn(state, "no, still the same")
+    assert state["risk"] >= pipeline.RISK_ESCALATE_THRESHOLD, "would have escalated before"
+    assert state["stage"] != "escalated"
+    assert stubs["tickets"] == []
+    assert bot[-1]["response"] == REQ_Q
+    assert not any(r["escalate"] for r in bot)
+
+    stubs["prediction"] = prediction("issue_report", "neutral")
+    stubs["extract"] = [{"requester": "Priya Nair, E4471"}]
+    state, bot = turn(state, "Priya Nair, E4471")
+    ticket = stubs["tickets"][-1]
+    assert ticket["employee"] == "Priya Nair, E4471"
+    # severity still from peak risk + impact: peak 0.75 -> high, though this turn is calm
+    assert state["risk"] < 0.4 and state["peak_risk"] >= 0.75
+    assert ticket["severity"] == "high"
+    assert state["stage"] == "summary" and state["escalation_trigger"] == ""
+
+
+def test_risk_only_escalation_on_requester_answer_still_stores_it(stubs):
+    state, _ = turn(to_fix_check(stubs, "f2"), "no")
+    assert state["pending_slot"] == "requester"
+    stubs["prediction"] = FRUSTRATED
+    stubs["extract"] = [{"requester": "Sam Lee"}]
+    state, _ = turn(state, "Sam Lee")
+    assert stubs["tickets"][-1]["employee"] == "Sam Lee"
+    assert state["stage"] == "summary"
+
+
+def test_clear_fix_with_frustrated_tone_still_resolves(stubs):
+    state = to_fix_check(stubs, "f3")
+    stubs["prediction"] = FRUSTRATED
+    state, bot = turn(state, "yes that worked, finally")
+    assert bot[-1]["resolved"] is True
+    assert stubs["tickets"] == []
+
+
+@pytest.mark.parametrize("message,trigger_rule", [
+    ("no, this is unacceptable", "angry_keyword"),
+    ("no, I want to speak to a human", "explicit_human"),
+    ("no, and I think I clicked a phishing link", "security_incident"),
+])
+def test_keyword_escalation_at_fix_check_is_immediate(stubs, message, trigger_rule):
+    assert pipeline.keyword_flags(message)[trigger_rule]
+    state = to_fix_check(stubs, "f4")
+    stubs["prediction"] = FRUSTRATED  # model risk fires too; keyword still wins
+    state, bot = turn(state, message)
+    assert state["stage"] == "escalated"
+    assert state["escalation_trigger"] in ("keyword", "both")
+    assert bot[-1]["escalate"] is True
+    assert REQ_Q not in bot[-1]["response"]
+    assert len(stubs["tickets"]) == 1
+
+
+def test_risk_only_escalation_outside_fix_check_is_still_immediate(stubs):
+    stubs["prediction"] = prediction("complaint", "angry", 0.95)
+    state = pipeline.run_turn(pipeline.get_initial_state("f5"), "my laptop died during a client demo")
+    assert state["stage"] == "escalated" and state["escalation_trigger"] == "model"
+
+
+def test_ticket_request_while_requester_pending_counts_as_skip(stubs):
+    state, _ = turn(to_fix_check(stubs, "f6"), "no")
+    assert state["pending_slot"] == "requester"
+    state, bot = turn(state, "just create a ticket")
+    assert state["qualification"]["requester"] == pipeline.REQUESTER_SKIPPED
+    assert len(stubs["tickets"]) == 1 and stubs["tickets"][0]["employee"] is None
+    assert REQ_Q not in bot[-1]["response"]
+    assert state["conversation_ended"] is True

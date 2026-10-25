@@ -966,11 +966,32 @@ def run_turn(state: AgentState, msg: str) -> AgentState:
     state = classify(state)
     state, action, reason, trigger = decide(state)
 
+    # At the fix check (and the requester question that follows it), a
+    # risk-only escalation — no keyword rule fired — means "not fixed": take
+    # the normal ticket path (requester, then ticket; severity still from
+    # peak risk + impact). Keyword escalations still hand off immediately.
+    on_ticket_path = state["stage"] == "troubleshoot" or state.get("pending_slot") == "requester"
+    if action == "escalate" and trigger == "model" and on_ticket_path:
+        log_decision(state["session_id"], "qualify", "fix_check", f"risk-only escalation at fix check ({reason}); ticket path")
+        user_msg = last_human_message(state) or ""
+        if state.get("pending_slot") == "requester":
+            action = "qualify"
+        elif fix_outcome(user_msg) == "resolved":
+            action = "qualify"  # a clear "yes, it worked" still resolves
+        else:
+            state = prepare_ticket(state, "Thanks for trying those steps. I'll raise a ticket so Human IT Support can take it from here.")
+            action = "ticket_path"
+
     if action == "escalate":
         state = escalate_handler(state, reason, trigger)
     else:
-        if action == "summary":
-            # ticket requested: the optional requester is still asked first
+        if action == "ticket_path":
+            pass
+        elif action == "summary":
+            # ticket requested: the optional requester is still asked first;
+            # a request made while that question is pending counts as "skip"
+            if state.get("pending_slot") == "requester":
+                state = {**state, "qualification": {**state.get("qualification", {}), "requester": REQUESTER_SKIPPED}}
             state = prepare_ticket(state)
         elif action == "qualify":
             state = qualify_handler(state)
