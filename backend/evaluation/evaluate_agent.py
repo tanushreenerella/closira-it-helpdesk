@@ -27,7 +27,8 @@ from backend import pipeline
 
 
 CASES_PATH = Path(__file__).with_name("test_cases.json")
-SIDE_EFFECTS = ("llm_call", "llm_extract", "record_escalation", "log_decision", "create_ticket", "save_final_summary")
+SIDE_EFFECTS = ("llm_call", "llm_extract", "llm_select", "record_escalation", "log_decision", "create_ticket",
+                "save_final_summary")
 
 
 def deterministic_llm_response(_system: str, _messages: list[dict[str, str]]) -> dict[str, Any]:
@@ -47,7 +48,8 @@ def offline_dependencies() -> Iterator[None]:
     originals = {name: getattr(pipeline, name) for name in SIDE_EFFECTS}
     pipeline.llm_call = deterministic_llm_response
     pipeline.llm_extract = no_extraction
-    for name in SIDE_EFFECTS[2:]:
+    pipeline.llm_select = no_extraction  # no step selection -> category steps
+    for name in SIDE_EFFECTS[3:]:
         setattr(pipeline, name, lambda *_args, **_kwargs: None)
     try:
         yield

@@ -134,7 +134,8 @@ export default function Home() {
         setStage(payload.stage);
         setGaps(payload.sop_gaps || []);
         setQualification(payload.qualification || {});
-        setMeta(payload.meta || {});
+        // Follow-up bot messages carry no classification fields; keep the turn's tags in the sidebar.
+        setMeta((old) => ({ ...old, ...(payload.meta || {}) }));
       } else if (payload.type === "system") {
         setMessages((old) => [...old, { role: "system", text: payload.message }]);
       }

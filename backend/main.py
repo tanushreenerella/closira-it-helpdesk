@@ -41,7 +41,8 @@ def parse_agent_message(message: dict) -> dict:
             "escalation_reason": payload.get("escalation_reason"), "sop_gap": payload.get("sop_gap", False),
             "stage_complete": payload.get("stage_complete", False), "degraded": payload.get("degraded", False),
             "ticket_id": payload.get("ticket_id"), "ticket_severity": payload.get("ticket_severity"),
-            **{key: payload.get(key) for key in CLASSIFICATION_KEYS}}
+            # only the turn's first reply carries classification tags
+            **{key: payload[key] for key in CLASSIFICATION_KEYS if payload.get(key) is not None}}
 
 
 @app.get("/health")

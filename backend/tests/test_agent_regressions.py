@@ -47,6 +47,7 @@ def _no_external_side_effects(monkeypatch):
     monkeypatch.setattr(pipeline, "create_ticket", lambda *a, **k: None)
     monkeypatch.setattr(pipeline, "classify_message", lambda text: prediction())
     monkeypatch.setattr(pipeline, "llm_extract", lambda system, messages: {})
+    monkeypatch.setattr(pipeline, "llm_select", lambda system, messages: {})
 
 
 # ── 1. escalation must read the last HUMAN message ──────────────────────────

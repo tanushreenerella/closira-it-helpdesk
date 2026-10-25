@@ -21,7 +21,8 @@ def prediction(intent="issue_report", emotion="neutral", p=0.9, emotion_p=None):
 def stubs(monkeypatch):
     """Groq, DB and classifier stubs. Tests queue slot extractions in
     calls["extract"] — one dict per extraction call, {} once the queue is empty."""
-    calls = {"llm": 0, "extract": [], "extract_calls": 0, "tickets": [], "summaries": [], "classified": []}
+    calls = {"llm": 0, "extract": [], "extract_calls": 0, "tickets": [], "summaries": [], "classified": [],
+             "select": {}, "select_calls": []}
 
     def llm(system, messages):
         calls["llm"] += 1
@@ -36,8 +37,13 @@ def stubs(monkeypatch):
         calls["classified"].append(text)
         return calls.get("prediction", prediction())
 
+    def select(system, messages):
+        calls["select_calls"].append(system)
+        return calls["select"]
+
     monkeypatch.setattr(pipeline, "llm_call", llm)
     monkeypatch.setattr(pipeline, "llm_extract", extract)
+    monkeypatch.setattr(pipeline, "llm_select", select)
     monkeypatch.setattr(pipeline, "record_escalation", lambda *a, **k: None)
     monkeypatch.setattr(pipeline, "log_decision", lambda *a, **k: None)
     monkeypatch.setattr(pipeline, "create_ticket", lambda **k: calls["tickets"].append(k) or {"ticket_id": "T1"})
@@ -53,6 +59,13 @@ def last_reply(state):
 
 def replies(state):
     return [json.loads(m["content"]) for m in state["messages"] if m["role"] == "assistant"]
+
+
+def turn(state, msg):
+    """run_turn + this turn's bot replies."""
+    n = len(state["messages"]) + 1
+    state = pipeline.run_turn(state, msg)
+    return state, [json.loads(m["content"]) for m in state["messages"][n:]]
 
 
 REQ = {"requester": "Jordan Smith, E1234"}  # first-message extractions include the optional requester
@@ -127,8 +140,6 @@ def test_extraction_failure_falls_back_to_the_asked_slot(stubs, monkeypatch):
     monkeypatch.setattr(pipeline, "llm_extract", boom)
     state = pipeline.run_turn(pipeline.get_initial_state("s4"), "my VPN connection drops after 10 minutes")
     assert state["qualification"]["issue_category"] == "vpn"  # keyword fallback
-    assert state["pending_slot"] == "requester"
-    state = pipeline.run_turn(state, "skip")
     assert state["pending_slot"] == "error_message"
     state = pipeline.run_turn(state, "error 809")
     assert state["qualification"]["error_message"] == "error 809"
@@ -297,11 +308,11 @@ def test_classifier_failure_degrades_gracefully(stubs, monkeypatch):
     def boom(text):
         raise RuntimeError("no model")
     monkeypatch.setattr(pipeline, "classify_message", boom)
-    state = pipeline.run_turn(pipeline.get_initial_state("o5"), "how do I reset my password")
+    state, bot = turn(pipeline.get_initial_state("o5"), "how do I reset my password")
     assert state["intent_degraded"] is True
     assert state["intent_label"] == "uncertain"
     assert state["stage"] == "qualify"
-    assert last_reply(state)["classifier_degraded"] is True
+    assert bot[0]["classifier_degraded"] is True
 
 
 def test_long_slot_filling_does_not_trip_the_repeat_guard(stubs):
@@ -314,33 +325,203 @@ def test_long_slot_filling_does_not_trip_the_repeat_guard(stubs):
 
 # ── Optional requester slot ──────────────────────────────────────────────────
 
-def test_requester_is_asked_first_and_stored_on_ticket(stubs):
-    stubs["extract"] = [{"issue_category": "vpn", "problem_details": "VPN fails with error 809 on connect"}]
-    state = pipeline.run_turn(pipeline.get_initial_state("r1"), "VPN fails with error 809 on connect")
+VPN_NO_REQ = {k: v for k, v in VPN_FULL.items() if k != "requester"}
+REQ_Q = pipeline.SLOT_QUESTIONS["requester"]["default"]
+
+
+def to_fix_check(stubs, session, extraction=None):
+    """Fill every issue slot (no requester) and reach "did that fix it?"."""
+    stubs["extract"] = [dict(extraction or VPN_NO_REQ)]
+    state = pipeline.run_turn(pipeline.get_initial_state(session), "VPN drops every 10 minutes, error 809, Windows 11 Dell")
+    stubs["extract"] = [{"impact": "slows me down", "impact_level": "degraded"}]
+    return pipeline.run_turn(state, "slows me down")
+
+
+def test_requester_is_asked_last_right_before_the_ticket(stubs):
+    state = to_fix_check(stubs, "r1")
+    asked = " ".join(r["response"] for r in replies(state))
+    assert REQ_Q not in asked, "requester is not asked during slot filling"
+
+    state, bot = turn(state, "no, still broken")
+    assert stubs["tickets"] == []
+    assert bot[-1]["response"] == REQ_Q
     assert state["pending_slot"] == "requester"
-    assert pipeline.SLOT_QUESTIONS["requester"]["default"] in last_reply(state)["response"]
 
     stubs["extract"] = [{"requester": "Priya Nair, E4471"}]
-    state = pipeline.run_turn(state, "Priya Nair, E4471")
+    state, bot = turn(state, "Priya Nair, E4471")
     assert state["qualification"]["requester"] == "Priya Nair, E4471"
-    state = pipeline.run_turn(state, "create a ticket please")
     assert stubs["tickets"][-1]["employee"] == "Priya Nair, E4471"
+    assert state["conversation_ended"] is True
+
+
+def test_requester_is_never_asked_when_resolved(stubs):
+    state = to_fix_check(stubs, "r2")
+    state, bot = turn(state, "yes, that worked")
+    assert all(REQ_Q not in r["response"] for r in replies(state))
+    assert stubs["tickets"] == []
 
 
 def test_requester_can_be_skipped(stubs):
-    stubs["extract"] = [{"issue_category": "vpn", "problem_details": "VPN fails with error 809 on connect"}]
-    state = pipeline.run_turn(pipeline.get_initial_state("r2"), "VPN fails with error 809 on connect")
-    state = pipeline.run_turn(state, "I'd rather not say")
+    state, _ = turn(to_fix_check(stubs, "r3"), "no")
+    state, _ = turn(state, "I'd rather not say")
     assert state["qualification"]["requester"] == pipeline.REQUESTER_SKIPPED
-    assert state["pending_slot"] != "requester", "a skipped requester is not asked again"
-    state = pipeline.run_turn(state, "create a ticket please")
     assert stubs["tickets"][-1]["employee"] is None
 
 
+def test_ticket_request_asks_requester_first(stubs):
+    stubs["extract"] = [{"issue_category": "vpn", "problem_details": "VPN fails with error 809"}]
+    state = pipeline.run_turn(pipeline.get_initial_state("r4"), "VPN fails with error 809")
+    state, bot = turn(state, "please just create a ticket")
+    assert bot[-1]["response"] == REQ_Q and stubs["tickets"] == []
+    state, _ = turn(state, "skip")
+    assert len(stubs["tickets"]) == 1
+
+
 def test_requester_given_up_front_is_not_asked(stubs):
-    stubs["extract"] = [{"requester": "Sam Lee", "issue_category": "email", "problem_details": "emails bounce with 550"}]
-    state = pipeline.run_turn(pipeline.get_initial_state("r3"), "Hi, Sam Lee here — my emails bounce with 550")
-    assert state["pending_slot"] != "requester"
+    stubs["extract"] = [{"requester": "Sam Lee", **VPN_NO_REQ}]
+    state = pipeline.run_turn(pipeline.get_initial_state("r5"), "Sam Lee here — VPN drops every 10 minutes, error 809")
+    stubs["extract"] = [{"impact": "slows me down"}]
+    state = pipeline.run_turn(state, "slows me down")
+    state = pipeline.run_turn(state, "no")
+    assert all(REQ_Q not in r["response"] for r in replies(state))
+    assert stubs["tickets"][-1]["employee"] == "Sam Lee"
+
+
+# ── One question per bot message ─────────────────────────────────────────────
+
+def test_one_question_per_bot_message_and_faq_answer_kept_separate(stubs):
+    stubs["llm_result"] = {"response": "Check your internet connection first. Would you like more help?", "sop_gap": False}
+    stubs["extract"] = [{"issue_category": "vpn", "problem_details": "VPN connects then drops every 10 minutes"}]
+    state, bot = turn(pipeline.get_initial_state("q1"), "VPN connects then drops every 10 minutes")
+
+    assert len(bot) == 2, "FAQ answer and the slot question are separate messages"
+    assert "?" not in bot[0]["response"], "question sentences are stripped from the FAQ answer"
+    assert "Check your internet connection" in bot[0]["response"]
+    assert bot[1]["response"] == pipeline.SLOT_QUESTIONS["error_message"]["vpn"]
+
+    for answer in ("error 809", "Windows 11", "slows me down", "no", "skip"):
+        state = pipeline.run_turn(state, answer)
+    for r in replies(state):
+        assert r["response"].count("?") <= 1, r["response"]
+
+
+def test_every_slot_question_is_a_single_question():
+    questions = [q for qs in pipeline.SLOT_QUESTIONS.values() for q in qs.values()]
+    questions += list(pipeline.VAGUE_FOLLOWUPS.values()) + [pipeline.FIX_CHECK]
+    for q in questions:
+        assert q.count("?") == 1, q
+
+
+# ── SOP steps shown once ─────────────────────────────────────────────────────
+
+def test_steps_shown_in_faq_reply_are_not_repeated(stubs):
+    steps = pipeline.PLAYBOOKS["vpn"]["self_help_steps"]
+    stubs["llm_result"] = {"response": "Try this: " + " ".join(steps), "sop_gap": False, "troubleshooting_shown": "VPN"}
+    state = to_fix_check(stubs, "o1")
+    bot = replies(state)
+    assert sum(steps[0] in r["response"] for r in bot) == 1, "steps appear once, in the FAQ answer"
+    assert bot[-1]["response"] == pipeline.FIX_CHECK
+    assert state["stage"] == "troubleshoot"
+
+
+def test_steps_detected_in_faq_reply_without_groq_flag(stubs):
+    steps = pipeline.PLAYBOOKS["vpn"]["self_help_steps"]
+    stubs["llm_result"] = {"response": steps[1], "sop_gap": False}
+    state = to_fix_check(stubs, "o2")
+    assert replies(state)[-1]["response"] == pipeline.FIX_CHECK
+
+
+def test_steps_shown_at_the_end_when_faq_reply_had_none(stubs):
+    state = to_fix_check(stubs, "o3")
+    last = replies(state)[-1]
+    assert last["shows_steps"] is True
+    assert pipeline.FIX_CHECK in last["response"]
+
+
+# ── Topic-only first message ─────────────────────────────────────────────────
+
+@pytest.mark.parametrize("topic,category", [("VPN", "vpn"), ("Wi-Fi / Network", "network"),
+                                            ("Account & Password", "account"), ("Device Issues", "device"),
+                                            ("email", "email"), ("Software & Access", "software")])
+def test_topic_only_message_asks_what_is_happening(stubs, topic, category):
+    state, bot = turn(pipeline.get_initial_state("t1"), topic)
+    assert stubs["llm"] == 0, "no generic FAQ answer / step dump for a bare topic"
+    assert len(bot) == 1
+    assert bot[0]["response"] == pipeline.SLOT_QUESTIONS["problem_details"][category]
+    assert state["qualification"] == {"issue_category": category}
+    assert state["pending_slot"] == "problem_details"
+    assert not state["steps_shown"]
+
+
+def test_message_with_details_is_not_topic_only():
+    assert not pipeline.is_topic_only("VPN keeps dropping")
+    assert not pipeline.is_topic_only("how do I reset my password")
+    assert pipeline.is_topic_only("vpn issue")
+
+
+# ── Tags only on the reply to user text ──────────────────────────────────────
+
+def test_tags_only_on_first_reply_of_a_turn(stubs):
+    stubs["extract"] = [{"issue_category": "vpn", "problem_details": "VPN connects then drops every 10 minutes"}]
+    state, bot = turn(pipeline.get_initial_state("g1"), "VPN connects then drops every 10 minutes")
+    assert len(bot) == 2
+    assert {"intent", "emotion", "risk"} <= bot[0].keys()
+    assert not {"intent", "emotion", "risk"} & bot[1].keys()
+
+    state, bot = turn(to_fix_check(stubs, "g2"), "no")  # "thanks, raising a ticket" + requester question
+    assert "intent" in bot[0] and "intent" not in bot[1]
+
+
+# ── Error-specific SOP step selection ────────────────────────────────────────
+
+def all_sop_self_help_steps():
+    return [s for p in pipeline.SOP["troubleshooting_playbooks"] for s in p["self_help_steps"]]
+
+
+def test_groq_picks_steps_for_the_error_from_sop_only(stubs):
+    stubs["select"] = {"step_ids": [2, 0]}
+    state = to_fix_check(stubs, "e1")
+    assert len(stubs["select_calls"]) == 1
+    assert "error 809" in stubs["select_calls"][0]
+    vpn = pipeline.PLAYBOOKS["vpn"]["self_help_steps"]  # category steps are listed first
+    text = replies(state)[-1]["response"]
+    assert f"1. {vpn[2]}" in text and f"2. {vpn[0]}" in text
+    assert vpn[1] not in text
+
+
+def test_selected_steps_can_come_from_another_playbook(stubs):
+    candidates = pipeline.PLAYBOOKS["vpn"]["self_help_steps"] + pipeline.PLAYBOOKS["account"]["self_help_steps"]
+    stubs["select"] = {"step_ids": [len(pipeline.PLAYBOOKS["vpn"]["self_help_steps"])]}  # first account step
+    state = to_fix_check(stubs, "e2")
+    assert candidates[len(pipeline.PLAYBOOKS["vpn"]["self_help_steps"])] in replies(state)[-1]["response"]
+
+
+@pytest.mark.parametrize("bad", [{"step_ids": [999, -1, "0", True]}, {"step_ids": "all"}, {"steps": ["Reinstall Windows"]},
+                                 {"step_ids": []}, None])
+def test_invalid_step_selection_falls_back_to_category_steps(stubs, bad):
+    stubs["select"] = bad
+    state = to_fix_check(stubs, "e3")
+    text = replies(state)[-1]["response"]
+    for step in pipeline.PLAYBOOKS["vpn"]["self_help_steps"]:
+        assert step in text
+    assert "Reinstall Windows" not in text
+    numbered = [line.split(". ", 1)[1] for line in text.splitlines() if line[:1].isdigit()]
+    assert all(step in all_sop_self_help_steps() for step in numbered), "never an invented step"
+
+
+def test_no_error_message_skips_groq_selection(stubs):
+    state = to_fix_check(stubs, "e4", extraction={**VPN_NO_REQ, "error_message": "none"})
+    assert stubs["select_calls"] == []
+    for step in pipeline.PLAYBOOKS["vpn"]["self_help_steps"]:
+        assert step in replies(state)[-1]["response"]
+
+
+def test_step_selection_failure_falls_back(stubs, monkeypatch):
+    def boom(system, messages):
+        raise RuntimeError("groq down")
+    monkeypatch.setattr(pipeline, "llm_select", boom)
+    state = to_fix_check(stubs, "e5")
+    assert pipeline.PLAYBOOKS["vpn"]["self_help_steps"][0] in replies(state)[-1]["response"]
 
 
 # ── Emotion-only risk for uncertain intents ──────────────────────────────────

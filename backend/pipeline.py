@@ -61,8 +61,10 @@ DECISION_LOG_PATH = os.path.join(os.path.dirname(__file__), "decision_log.json")
 
 # ── Slots ────────────────────────────────────────────────────────────────────
 SLOTS = ("requester", "issue_category", "problem_details", "error_message", "device_os", "impact")
-# requester (name or employee ID) is asked first but optional: declining
+# Slots asked during qualification, in order. requester (name or employee ID)
+# is optional and only asked right before a ticket is created; declining
 # stores REQUESTER_SKIPPED so it is never asked again.
+ISSUE_SLOTS = SLOTS[1:]
 REQUESTER_SKIPPED = "not provided"
 SKIP_ANSWER = re.compile(r"^\s*(skip|no|nope|no thanks|n/?a|pass|prefer not|i'?d rather not|rather not|"
                          r"anonymous|not now|none|no name)\b", re.I)
@@ -92,7 +94,7 @@ CATEGORY_KEYWORDS = [
 
 SLOT_QUESTIONS = {
     "requester": {
-        "default": "First, could I have your name or employee ID for the ticket? This is optional — say \"skip\" if you'd rather not.",
+        "default": "Before I raise the ticket, could I have your name or employee ID? It's optional — say \"skip\" if you'd rather not.",
     },
     "issue_category": {
         "default": "Which area is this about: account or password, Wi-Fi or network, VPN, a device, email, or software and access?",
@@ -125,7 +127,7 @@ SLOT_QUESTIONS = {
         "software": "Which device and operating system do you need the software on?",
     },
     "impact": {
-        "default": "How is this affecting your work — are you completely blocked, slowed down, or is it a minor inconvenience? Is anyone else affected?",
+        "default": "How is this affecting your work — completely blocked, slowed down, or a minor inconvenience — and is anyone else affected?",
     },
 }
 
@@ -133,7 +135,7 @@ SLOT_QUESTIONS = {
 VAGUE_FOLLOWUPS = {
     "default": "Could you be more specific about what happens — what you expect to see and what you see instead?",
     "vpn": "Could you be more specific: does the VPN fail to connect at all, connect and then drop, or connect but you can't reach internal sites?",
-    "network": "Could you be more specific: no connection at all, a slow connection, or one that keeps dropping? Is it Wi-Fi, wired, or both?",
+    "network": "Could you be more specific: no connection at all, a slow connection, or one that keeps dropping — and on Wi-Fi, wired, or both?",
     "account": "Could you be more specific: are you unable to sign in, locked out, or stuck at the multi-factor step?",
     "device": "Could you be more specific: does it not power on, crash or freeze, run very slowly, or is a part (screen, keyboard, battery) failing?",
     "email": "Could you be more specific: is the problem sending, receiving, signing in, or opening a shared mailbox?",
@@ -151,6 +153,14 @@ FIX_UNRESOLVED = re.compile(
     r"\b(no|nope|nah|didn'?t|did not|doesn'?t|does not|still|not (working|fixed|resolved)|same (issue|problem|thing)|"
     r"nothing|no luck|not really)\b", re.I)
 FIX_RESOLVED = re.compile(r"\b(yes|yep|yeah|yup|worked|works( now)?|fixed|resolved|sorted|all good|that did it|perfect)\b", re.I)
+
+# A first message that only names a topic ("VPN", "Wi-Fi / Network", "Device
+# Issues") — once the category words and these fillers are removed, nothing
+# is left that says what is happening.
+TOPIC_FILLER = re.compile(r"\b(my|the|a|an|and|with|for|about|on|of|access|issues?|problems?|help|support|question|"
+                          r"please|hi|hello|hey|i need|need)\b|[^\w\s]", re.I)
+FIX_CHECK = "Did that fix it? (yes / no)"
+MAX_SELECTED_STEPS = 4
 
 
 def log_escalation(session_id: str, reason: str, trigger: str = "model",
@@ -204,6 +214,7 @@ class AgentState(TypedDict):
     followup_asked: bool         # the vague-details follow-up was already asked
     impact_level: str            # blocked | degraded | minor | ""
     troubleshoot_reasked: bool
+    steps_shown: bool            # SOP troubleshooting steps were already shown this session
     ready_for_ticket: bool
     escalation_reason: str
     sop_gaps: list
@@ -231,7 +242,7 @@ YOUR STRICT RULES:
 2. If a question is outside the SOP, say clearly: "I don't have that information right now", offer to connect them with Human IT Support, and set sop_gap=true.
 3. Never ask for passwords, one-time codes, recovery codes, or sensitive email content.
 4. Be concise, practical, and professional — like a knowledgeable IT support analyst.
-5. Do not ask the employee follow-up questions; the assistant asks for any missing details separately.
+5. Do not ask the employee any questions; the assistant asks for missing details in a separate message.
 6. Always respond in English.
 
 SOP DATA:
@@ -240,9 +251,23 @@ SOP DATA:
 RESPONSE FORMAT (always return valid JSON, nothing else, no markdown fences):
 {{
   "response": "<your reply to the employee>",
-  "sop_gap": <true/false>
+  "sop_gap": <true/false>,
+  "troubleshooting_shown": "<the SOP playbook 'issue' whose troubleshooting steps your response walks through, or null>"
 }}
 """
+
+SELECT_STEPS_PROMPT = """Pick the SOP self-help steps most relevant to the employee's error. You do not reply to the employee.
+
+Issue category: {category}
+Problem: {problem}
+Error message: {error}
+
+Candidate steps (id: [playbook] step):
+{candidates}
+
+Return ONLY valid JSON, no markdown fences:
+{{"step_ids": [<1 to {max_steps} ids from the list above, most relevant first>]}}
+Use only ids from the list. Do not write new steps. Return {{"step_ids": []}} if none are relevant."""
 
 EXTRACT_PROMPT = """You extract structured IT-support details from the employee's LATEST message. You do not reply to the employee and you do not decide what happens next.
 
@@ -312,6 +337,11 @@ def llm_extract(system: str, messages: list) -> dict:
     return groq_json(system, messages, max_tokens=300)
 
 
+def llm_select(system: str, messages: list) -> dict:
+    """Groq picks SOP step ids for an error. Returns the parsed JSON; raises on failure."""
+    return groq_json(system, messages, max_tokens=100)
+
+
 def assistant_payload(result: dict) -> dict:
     """Keep assistant messages structured so the UI can read routing data."""
     return {
@@ -325,6 +355,7 @@ def assistant_payload(result: dict) -> dict:
         "ticket_id": result.get("ticket_id"),
         "ticket_severity": result.get("ticket_severity"),
         "resolved": bool(result.get("resolved", False)),
+        "shows_steps": bool(result.get("shows_steps", False)),
     }
 
 
@@ -557,15 +588,28 @@ def collect_slots(state: AgentState, text: str) -> AgentState:
     return {**state, "qualification": qual, "details_vague": details_vague, "impact_level": level}
 
 
+def is_topic_only(text: str) -> bool:
+    """The message names an issue area and nothing else ("VPN", "Wi-Fi / Network")."""
+    category = guess_category(text)
+    if not category:
+        return False
+    rx = dict(CATEGORY_KEYWORDS)[category]
+    leftover = TOPIC_FILLER.sub(" ", rx.sub(" ", text))
+    # other category words ("Account & Password", "Software & Access") are topic words too
+    for _, other in CATEGORY_KEYWORDS:
+        leftover = other.sub(" ", leftover)
+    return not leftover.strip()
+
+
 def next_question(state: AgentState) -> tuple[str | None, str | None]:
-    """(slot, question) for the next thing to ask, or (None, None) when done."""
+    """(slot, question) for the next missing issue slot, or (None, None) when
+    all are filled. The optional requester is not asked here — see
+    prepare_ticket()."""
     qual = state.get("qualification", {})
     category = qual.get("issue_category") or "default"
-    if not qual.get("requester"):
-        return "requester", SLOT_QUESTIONS["requester"]["default"]
     if qual.get("problem_details") and state.get("details_vague") and not state.get("followup_asked"):
         return "problem_details", VAGUE_FOLLOWUPS.get(category, VAGUE_FOLLOWUPS["default"])
-    for slot in SLOTS:
+    for slot in ISSUE_SLOTS:
         if not qual.get(slot):
             questions = SLOT_QUESTIONS[slot]
             return slot, questions.get(category, questions["default"])
@@ -577,27 +621,102 @@ def self_help_steps(category: str | None) -> list[str]:
     return list(playbook.get("self_help_steps", [])) if playbook else []
 
 
-def ask_next(state: AgentState, prefix: str = "") -> AgentState:
-    """Ask for the next missing slot, or — once all are filled — offer the
-    SOP self-help steps before any ticket is created."""
-    lead = f"{prefix} " if prefix else ""
+def _words(text: str) -> str:
+    return " ".join(re.findall(r"\w+", text.lower()))
+
+
+def shows_sop_steps(answer: str, troubleshooting_shown=None) -> bool:
+    """Whether an FAQ reply already walked the employee through SOP steps:
+    Groq names the playbook it used, or the reply quotes an SOP step."""
+    if troubleshooting_shown and any(p["issue"].lower() == str(troubleshooting_shown).lower()
+                                     for p in SOP["troubleshooting_playbooks"]):
+        return True
+    text = _words(answer)
+    steps = (s for p in SOP["troubleshooting_playbooks"] for s in p.get("self_help_steps", []) + p["steps"])
+    return any(" ".join(_words(s).split()[:6]) in text for s in steps)
+
+
+def strip_questions(text: str) -> str:
+    """Drop question sentences from an FAQ reply that a slot question follows,
+    so each bot message carries at most one question."""
+    sentences = re.split(r"(?<=[.!?])\s+", text.strip())
+    return " ".join(s for s in sentences if not s.rstrip().endswith("?")).strip()
+
+
+def no_error_given(error: str | None) -> bool:
+    return not error or bool(SKIP_ANSWER.search(error)) or _words(error) in ("none", "no error", "nothing", "no")
+
+
+def select_steps(state: AgentState) -> list[str]:
+    """SOP self-help steps to offer. With a real error message, Groq picks the
+    most relevant ones — by id, from sop.json only; anything it returns that
+    isn't a listed id is dropped. Falls back to the category's steps."""
+    q = state.get("qualification", {})
+    category = q.get("issue_category") or ""
+    fallback = self_help_steps(category)
+    if no_error_given(q.get("error_message")):
+        return fallback
+
+    # category steps first, then every other playbook's
+    candidates = [(p["issue"], s) for key in [category] + [k for k in PLAYBOOKS if k != category]
+                  if PLAYBOOKS.get(key) for p in [PLAYBOOKS[key]] for s in p.get("self_help_steps", [])]
+    listing = "\n".join(f"{i}: [{issue}] {step}" for i, (issue, step) in enumerate(candidates))
+    system = SELECT_STEPS_PROMPT.format(category=CATEGORIES.get(category) or category or "unknown",
+                                        problem=q.get("problem_details") or "", error=q.get("error_message"),
+                                        candidates=listing, max_steps=MAX_SELECTED_STEPS)
+    try:
+        raw = llm_select(system, [{"role": "user", "content": str(q.get("error_message"))}])
+        ids = raw.get("step_ids") if isinstance(raw, dict) else None
+        chosen, seen = [], set()
+        for i in ids if isinstance(ids, list) else []:
+            if isinstance(i, int) and not isinstance(i, bool) and 0 <= i < len(candidates) and i not in seen:
+                seen.add(i)
+                chosen.append(candidates[i][1])
+        return chosen[:MAX_SELECTED_STEPS] or fallback
+    except Exception as exc:
+        print(f"[select_steps] Groq step selection failed, using category steps: {exc}")
+        return fallback
+
+
+def needs_requester(state: AgentState) -> bool:
+    return not state.get("qualification", {}).get("requester") and state.get("pending_slot") != "requester"
+
+
+def prepare_ticket(state: AgentState, lead: str | None = None) -> AgentState:
+    """Right before a ticket: ask the optional requester once (as its own
+    message), otherwise mark the ticket ready."""
+    if lead:
+        state = reply(state, lead)
+    if needs_requester(state):
+        state = {**state, "stage": "qualify", "pending_slot": "requester"}
+        return reply(state, SLOT_QUESTIONS["requester"]["default"], pending_slot="requester")
+    return {**state, "pending_slot": "", "ready_for_ticket": True}
+
+
+def ask_next(state: AgentState) -> AgentState:
+    """Ask for the next missing slot (one question, its own message), or —
+    once all are filled — check whether the SOP self-help steps fix it before
+    any ticket is created. Steps are shown at most once per session."""
     slot, question = next_question(state)
     if slot:
         followup = slot == "problem_details" and bool(state.get("qualification", {}).get("problem_details"))
         state = {**state, "stage": "qualify", "qualification_started": True, "pending_slot": slot,
                  "followup_asked": state.get("followup_asked", False) or followup}
-        return reply(state, f"{lead}{question}", pending_slot=slot)
+        return reply(state, question, pending_slot=slot)
 
-    steps = self_help_steps(state["qualification"].get("issue_category"))
+    state = {**state, "pending_slot": ""}
+    if state.get("steps_shown"):
+        return reply({**state, "stage": "troubleshoot"}, FIX_CHECK)
+
+    steps = select_steps(state)
     if not steps:
-        state = {**state, "pending_slot": "", "ready_for_ticket": True}
-        return reply(state, f"{lead}Thanks — I have everything I need. Our SOP has no self-service fix for this, so I'll raise a ticket for Human IT Support.",
-                     stage_complete=True)
+        return prepare_ticket(state, "Thanks — I have everything I need. Our SOP has no self-service fix for this, "
+                                     "so I'll raise a ticket for Human IT Support.")
 
     numbered = "\n".join(f"{i}. {step}" for i, step in enumerate(steps, 1))
-    state = {**state, "stage": "troubleshoot", "pending_slot": ""}
-    return reply(state, f"{lead}Thanks, that's everything I need. Before I raise a ticket, please try these steps from our IT SOP:\n"
-                        f"{numbered}\nDid that fix the problem? (yes / no)")
+    state = {**state, "stage": "troubleshoot", "steps_shown": True}
+    return reply(state, f"Thanks, that's everything I need. Before I raise a ticket, please try these steps from our IT SOP:\n"
+                        f"{numbered}\n{FIX_CHECK}", shows_steps=True)
 
 
 def fix_outcome(text: str) -> str | None:
@@ -670,8 +789,17 @@ def escalate_handler(state: AgentState, reason: str, trigger: str, response: str
 def faq_handler(state: AgentState) -> AgentState:
     """Answer from the SOP. Groq writes the text; the router decides what
     happens if Groq reports the question is outside the SOP. A support
-    request then moves into slot filling."""
+    request then moves into slot filling; its first question goes in a
+    separate message after the answer."""
     user_msg = last_human_message(state) or ""
+    starts_qualification = (state.get("intent_label") not in NON_SUPPORT_INTENTS
+                            and user_msg.lower().strip() not in GREETINGS)
+
+    # Just a topic ("VPN"): ask what's happening instead of answering generically.
+    if starts_qualification and is_topic_only(user_msg):
+        qual = {**state.get("qualification", {}), "issue_category": guess_category(user_msg)}
+        return ask_next({**state, "qualification": qual, "unanswered_count": 0})
+
     generated = llm_call(SYSTEM_BASE, format_messages(state))
     # Keep only the text-side fields; any routing-like keys Groq adds are ignored.
     answer, sop_gap = str(generated.get("response", "")).strip(), bool(generated.get("sop_gap"))
@@ -684,15 +812,20 @@ def faq_handler(state: AgentState) -> AgentState:
         return escalate_handler(state, reason, "sop_gap", response=answer)
 
     state = {**state, "unanswered_count": 0}
-    starts_qualification = (state.get("intent_label") not in NON_SUPPORT_INTENTS
-                            and user_msg.lower().strip() not in GREETINGS)
     if not starts_qualification:
         return reply(state, answer)
-    return ask_next(collect_slots(state, user_msg), prefix=answer)
+
+    shown = shows_sop_steps(answer, generated.get("troubleshooting_shown"))
+    answer = strip_questions(answer)
+    state = {**state, "steps_shown": state.get("steps_shown", False) or shown}
+    if answer:
+        state = reply(state, answer, shows_steps=shown)
+    return ask_next(collect_slots(state, user_msg))
 
 
 def qualify_handler(state: AgentState) -> AgentState:
-    """Slot filling, then the "did the SOP fix work?" check."""
+    """Slot filling, then the "did the SOP fix work?" check, then the
+    optional requester right before the ticket."""
     user_msg = last_human_message(state) or ""
 
     if state["stage"] == "troubleshoot":
@@ -700,11 +833,13 @@ def qualify_handler(state: AgentState) -> AgentState:
         if outcome == "resolved":
             return {**state, "ready_for_ticket": False, "resolved": True}
         if outcome == "unresolved" or state.get("troubleshoot_reasked"):
-            state = {**state, "ready_for_ticket": True}
-            return reply(state, "Thanks for trying those steps. I'll raise a ticket so Human IT Support can take it from here.",
-                         stage_complete=True)
+            return prepare_ticket(state, "Thanks for trying those steps. I'll raise a ticket so Human IT Support can take it from here.")
         state = {**state, "troubleshoot_reasked": True}
         return reply(state, "Did those steps fix the problem? Please answer yes or no.")
+
+    # Answer to the requester question asked right before the ticket.
+    if state.get("pending_slot") == "requester":
+        return {**collect_slots(state, user_msg), "pending_slot": "", "ready_for_ticket": True}
 
     # Autonomous routing can land here before anything was asked; treat the
     # message as the issue description, like the FAQ hand-off does.
@@ -833,10 +968,14 @@ def run_turn(state: AgentState, msg: str) -> AgentState:
 
     if action == "escalate":
         state = escalate_handler(state, reason, trigger)
-    elif action == "summary":
-        state = summary_handler(state)
     else:
-        state = qualify_handler(state) if action == "qualify" else faq_handler(state)
+        if action == "summary":
+            # ticket requested: the optional requester is still asked first
+            state = prepare_ticket(state)
+        elif action == "qualify":
+            state = qualify_handler(state)
+        else:
+            state = faq_handler(state)
         # The flow can finish within this turn: the SOP fix worked, or
         # everything is collected and a ticket is due.
         if state.pop("resolved", False):
@@ -857,13 +996,17 @@ def classification_meta(state: AgentState) -> dict:
 
 
 def annotate_replies(state: AgentState, start: int) -> AgentState:
-    """Stamp this turn's classification onto its assistant replies, so it is
-    persisted as message metadata and shown again when a session reloads."""
+    """Stamp this turn's classification onto the turn's FIRST assistant reply
+    — the one answering the user's text — so it is persisted as message
+    metadata and shown again when a session reloads. Further bot-only
+    messages in the same turn (e.g. the question after an FAQ answer) carry
+    no tags."""
     meta = classification_meta(state)
-    messages = state["messages"][:start] + [
-        assistant_message({**json.loads(m["content"]), **meta}) if m.get("role") == "assistant" else m
-        for m in state["messages"][start:]
-    ]
+    messages, tagged = state["messages"][:start], False
+    for m in state["messages"][start:]:
+        if m.get("role") == "assistant" and not tagged:
+            m, tagged = assistant_message({**json.loads(m["content"]), **meta}), True
+        messages.append(m)
     return {**state, "messages": messages}
 
 
@@ -878,15 +1021,17 @@ def restore_flow_state(state: AgentState) -> AgentState:
             except Exception:
                 pass
             break
-    risks = []
+    risks, steps_shown = [], False
     for m in state["messages"]:
         if m.get("role") == "assistant":
             try:
-                risks.append(float(json.loads(m["content"]).get("risk") or 0.0))
+                payload = json.loads(m["content"])
+                risks.append(float(payload.get("risk") or 0.0))
+                steps_shown = steps_shown or bool(payload.get("shows_steps"))
             except Exception:
                 pass
     restored = {**state, "pending_slot": pending if state["stage"] == "qualify" else "",
-                "peak_risk": max(risks + [state.get("risk", 0.0)]),
+                "peak_risk": max(risks + [state.get("risk", 0.0)]), "steps_shown": steps_shown,
                 "impact_level": impact_level(state.get("qualification", {}).get("impact")) or ""}
     return {**restored, "last_progress": progress_signature(restored)}
 
@@ -906,6 +1051,7 @@ def get_initial_state(session_id: str = None) -> AgentState:
         "followup_asked": False,
         "impact_level": "",
         "troubleshoot_reasked": False,
+        "steps_shown": False,
         "ready_for_ticket": False,
         "escalation_reason": "",
         "sop_gaps": [],
