@@ -8,7 +8,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 
-from .pipeline import get_initial_state, run_turn
+from .pipeline import get_initial_state, restore_flow_state, run_turn
 from .database import create_session, get_session, initialize_database, list_sessions, persist_session
 
 
@@ -25,7 +25,8 @@ app.add_middleware(CORSMiddleware, allow_origins=[frontend_url], allow_credentia
 WELCOME = ("Hi there! Welcome to Closira IT Helpdesk. I'm your AI Support Assistant. "
            "I can help with accounts, Wi-Fi and network, VPN, devices, email, and software access. How can I help you today?")
 
-CLASSIFICATION_KEYS = ("intent", "intent_confidence", "emotion", "emotion_confidence", "risk", "classifier_degraded")
+CLASSIFICATION_KEYS = ("intent", "intent_raw", "intent_confidence", "emotion", "emotion_confidence", "risk",
+                       "peak_risk", "classifier_degraded")
 
 
 def parse_agent_message(message: dict) -> dict:
@@ -33,10 +34,10 @@ def parse_agent_message(message: dict) -> dict:
     try:
         payload = json.loads(content)
     except Exception:
-        payload = {"response": str(content), "confidence": 0.7}
+        payload = {"response": str(content)}
     response = str(payload.get("response", "")).strip().split("{", 1)[0].strip()
     return {"response": response or "I'm sorry, I didn't quite catch that. Could you rephrase?",
-            "confidence": payload.get("confidence", 0.7), "escalate": payload.get("escalate", False),
+            "escalate": payload.get("escalate", False), "resolved": payload.get("resolved", False),
             "escalation_reason": payload.get("escalation_reason"), "sop_gap": payload.get("sop_gap", False),
             "stage_complete": payload.get("stage_complete", False), "degraded": payload.get("degraded", False),
             "ticket_id": payload.get("ticket_id"), "ticket_severity": payload.get("ticket_severity"),
@@ -68,7 +69,6 @@ def session_payload(session: dict) -> dict:
             {
                 "role": "user" if message["role"] == "user" else "ai",
                 "text": message["content"],
-                "confidence": message["metadata"].get("confidence"),
                 "escalate": message["metadata"].get("escalate"),
                 "intent": message["metadata"].get("intent"),
                 "intentConfidence": message["metadata"].get("intent_confidence"),
@@ -93,7 +93,7 @@ def state_from_session(session: dict) -> dict:
         "stage": session["stage"],
         "unanswered_count": session["unanswered_count"],
         "qualification": session["qualification"],
-        "qualification_started": session["stage"] == "qualify" or bool(session["qualification"]),
+        "qualification_started": session["stage"] in ("qualify", "troubleshoot") or bool(session["qualification"]),
         "escalation_reason": session["escalation_reason"] or "",
         "sop_gaps": session["sop_gaps"],
         "conversation_ended": session["conversation_ended"],
@@ -110,7 +110,7 @@ def state_from_session(session: dict) -> dict:
         else {"role": "assistant", "content": json.dumps({"response": message["content"], **message["metadata"]})}
         for message in session["messages"]
     ]
-    return state
+    return restore_flow_state(state)
 
 
 def find_session(session_id: str | None) -> dict | None:

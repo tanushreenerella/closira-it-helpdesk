@@ -38,7 +38,9 @@ backend/ml/data/raw/
 backend/ml/data/processed/
 backend/ml/artifacts/
 backend/escalation_log.json
+backend/decision_log.json
 backend/summary_*.json
+summary_*.json
 
 # =========================
 # Node / Next.js

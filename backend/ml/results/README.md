@@ -35,12 +35,23 @@ Emotion: angry 0.47, frustrated 0.36, confused 0.39, sad 0.58, happy 0.76, neutr
 Gold = legacy label != `normal` (462 of 616 should escalate). Router = what the pipeline
 does in the FAQ stage.
 
-| | Precision | Recall | F1 |
-|---|---|---|---|
-| Keyword rules only | 0.987 | 0.331 | 0.496 |
-| Model (TF-IDF) risk only | 0.894 | 0.310 | 0.460 |
-| Router (rules + model) | 0.930 | 0.517 | 0.665 |
+Same rules as the pipeline: intents below 0.5 confidence are `uncertain` and ignored by
+routing; their risk comes from emotion + emotion keyword rules only
+(`router.emotion_only_risk` — a top emotion with confidence >= 0.6 counts at full
+weight, so confident frustrated/angry can escalate alone). The TF-IDF model is
+uncertain on 46% of these out-of-domain messages. Escalation threshold unchanged at 0.75.
 
-Escalation rate by legacy label (router): explicit_human_request 0.62, frustrated 0.74,
-repeated_confusion 0.19, normal 0.12 (false alarms). Repeated confusion is the gap — it
-is a multi-turn signal the per-turn model can't see (no conversation-level model yet).
+| Router version | Precision | Recall | F1 | Frustrated recall | False alarms (normal) |
+|---|---|---|---|---|---|
+| Original (all intents used) | 0.930 | 0.517 | 0.665 | 0.74 | 0.12 |
+| Uncertain intent ignored, risk = expected emotion | 0.961 | 0.426 | 0.591 | 0.58 | 0.05 |
+| **Uncertain intent ignored, risk = emotion-only (current)** | **0.957** | **0.437** | **0.600** | **0.58** | **0.06** |
+| Keyword rules only | 0.987 | 0.331 | 0.496 | 0.37 | 0.01 |
+
+Why frustrated recall stays at 0.58: the 24 frustrated messages the original router
+caught and the current one misses are *all* low-confidence `complaint` intents whose
+emotion is neutral / happy / sad, or frustrated/angry below 0.6 confidence — the original
+recall leaned on the complaint rule firing on intents the model wasn't sure of. The
+emotion-only path can't recover them with the TF-IDF emotion model (emotion macro-F1
+0.54); a better emotion head should. Repeated confusion (0.12) is the biggest gap — a
+multi-turn signal the per-turn model can't see (no conversation-level model yet).

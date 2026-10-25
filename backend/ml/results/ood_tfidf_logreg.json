@@ -7,6 +7,8 @@
     "repeated_confusion": 154,
     "normal": 154
   },
+  "uncertain_intent_rate": 0.45616883116883117,
+  "intent_confidence_threshold": 0.5,
   "escalation": {
     "keyword_rules": {
       "precision": 0.9870967741935484,
@@ -21,27 +23,27 @@
       }
     },
     "model_only": {
-      "precision": 0.89375,
-      "recall": 0.30952380952380953,
-      "f1": 0.45980707395498394,
-      "accuracy": 0.45454545454545453,
+      "precision": 0.9385964912280702,
+      "recall": 0.23160173160173161,
+      "f1": 0.3715277777777778,
+      "accuracy": 0.41233766233766234,
       "escalate_rate_by_legacy_label": {
-        "explicit_human_request": 0.045454545454545456,
-        "frustrated": 0.7012987012987013,
-        "normal": 0.11038961038961038,
-        "repeated_confusion": 0.18181818181818182
+        "explicit_human_request": 0.01948051948051948,
+        "frustrated": 0.564935064935065,
+        "normal": 0.045454545454545456,
+        "repeated_confusion": 0.11038961038961038
       }
     },
     "router": {
-      "precision": 0.9299610894941635,
-      "recall": 0.5173160173160173,
-      "f1": 0.6648122392211405,
-      "accuracy": 0.6087662337662337,
+      "precision": 0.957345971563981,
+      "recall": 0.43722943722943725,
+      "f1": 0.600297176820208,
+      "accuracy": 0.5633116883116883,
       "escalate_rate_by_legacy_label": {
-        "explicit_human_request": 0.6233766233766234,
-        "frustrated": 0.7402597402597403,
-        "normal": 0.11688311688311688,
-        "repeated_confusion": 0.18831168831168832
+        "explicit_human_request": 0.6103896103896104,
+        "frustrated": 0.5844155844155844,
+        "normal": 0.05844155844155844,
+        "repeated_confusion": 0.11688311688311688
       }
     }
   },
@@ -57,6 +59,15 @@
         "confused": 2
       },
       "intent_distribution": {
+        "uncertain": 67,
+        "issue_report": 54,
+        "action_request": 27,
+        "chit_chat": 2,
+        "complaint": 2,
+        "feedback": 1,
+        "information_request": 1
+      },
+      "raw_intent_distribution": {
         "issue_report": 75,
         "action_request": 54,
         "complaint": 8,
@@ -66,7 +77,7 @@
         "appreciation": 1
       },
       "emotion_consistent_rate": null,
-      "mean_risk": 0.4775493506493507
+      "mean_risk": 0.40468766233766235
     },
     "frustrated": {
       "n": 154,
@@ -79,6 +90,12 @@
         "confused": 6
       },
       "intent_distribution": {
+        "complaint": 75,
+        "uncertain": 52,
+        "issue_report": 26,
+        "appreciation": 1
+      },
+      "raw_intent_distribution": {
         "complaint": 107,
         "issue_report": 39,
         "appreciation": 2,
@@ -88,7 +105,7 @@
         "feedback": 1
       },
       "emotion_consistent_rate": 0.4025974025974026,
-      "mean_risk": 0.7020272727272727
+      "mean_risk": 0.6587954545454545
     },
     "normal": {
       "n": 154,
@@ -101,6 +118,16 @@
         "angry": 1
       },
       "intent_distribution": {
+        "uncertain": 87,
+        "issue_report": 28,
+        "information_request": 18,
+        "action_request": 9,
+        "complaint": 6,
+        "feedback": 3,
+        "appreciation": 2,
+        "chit_chat": 1
+      },
+      "raw_intent_distribution": {
         "issue_report": 55,
         "information_request": 36,
         "complaint": 30,
@@ -110,7 +137,7 @@
         "chit_chat": 1
       },
       "emotion_consistent_rate": 0.9155844155844156,
-      "mean_risk": 0.41339675324675323
+      "mean_risk": 0.28972857142857145
     },
     "repeated_confusion": {
       "n": 154,
@@ -122,6 +149,16 @@
         "confused": 5
       },
       "intent_distribution": {
+        "uncertain": 75,
+        "issue_report": 51,
+        "complaint": 11,
+        "feedback": 10,
+        "chit_chat": 3,
+        "action_request": 2,
+        "appreciation": 1,
+        "information_request": 1
+      },
+      "raw_intent_distribution": {
         "issue_report": 75,
         "complaint": 34,
         "appreciation": 18,
@@ -131,7 +168,7 @@
         "information_request": 2
       },
       "emotion_consistent_rate": 0.2727272727272727,
-      "mean_risk": 0.5076194805194805
+      "mean_risk": 0.4002233766233766
     }
   },
   "examples_missed_by_router": [
@@ -244,15 +281,9 @@
   "examples_false_alarm": [
     {
       "text": "My workstation says I\u2019m not an authorized user for the file server.",
-      "intent": "complaint",
+      "intent": "uncertain",
       "emotion": "frustrated",
-      "risk": 0.7204
-    },
-    {
-      "text": "After the recent security patch, I'm unable to access the shared drive.",
-      "intent": "complaint",
-      "emotion": "neutral",
-      "risk": 0.5355
+      "risk": 0.75
     },
     {
       "text": "I\u2019m able to connect to the network, but the internet speed is unusually slow during video calls.",
@@ -268,27 +299,15 @@
     },
     {
       "text": "The laptop\u2019s network adapter appears disabled in device manager; it won\u2019t connect to the corporate VPN.",
-      "intent": "complaint",
+      "intent": "uncertain",
       "emotion": "neutral",
-      "risk": 0.6093
-    },
-    {
-      "text": "After a brief outage, my Wi\u2011Fi signal is weak in the conference room and I can\u2019t load the shared drive.",
-      "intent": "complaint",
-      "emotion": "angry",
-      "risk": 0.6829
+      "risk": 0.3222
     },
     {
       "text": "My wireless connection drops every time I start a video call; the router seems fine on other devices.",
       "intent": "complaint",
       "emotion": "neutral",
       "risk": 0.5597
-    },
-    {
-      "text": "The Wi\u2011Fi network is prompting for credentials repeatedly, even though I\u2019m already logged in.",
-      "intent": "complaint",
-      "emotion": "neutral",
-      "risk": 0.58
     },
     {
       "text": "After a software update, my network adapter stopped detecting any wireless networks.",
@@ -303,18 +322,6 @@
       "risk": 0.6555
     },
     {
-      "text": "I can\u2019t connect to the VPN when I\u2019m on the new Wi\u2011Fi network, but it works on the old one.",
-      "intent": "complaint",
-      "emotion": "happy",
-      "risk": 0.501
-    },
-    {
-      "text": "My office Wi\u2011Fi keeps disconnecting at 3\u202fpm. I can still send emails but web browsing is spotty.",
-      "intent": "complaint",
-      "emotion": "neutral",
-      "risk": 0.5008
-    },
-    {
       "text": "The VPN keeps disconnecting after a few minutes of inactivity while I work from home.",
       "intent": "complaint",
       "emotion": "neutral",
@@ -322,15 +329,9 @@
     },
     {
       "text": "I accidentally clicked on a phishing link in an email; my account feels compromised.",
-      "intent": "action_request",
+      "intent": "uncertain",
       "emotion": "neutral",
-      "risk": 0.3067
-    },
-    {
-      "text": "My laptop\u2019s VPN connection keeps dropping after the update. I can\u2019t access the intranet. Any quick fix?",
-      "intent": "complaint",
-      "emotion": "neutral",
-      "risk": 0.5144
+      "risk": 0.1096
     }
   ]
 }

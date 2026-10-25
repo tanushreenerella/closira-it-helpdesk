@@ -6,26 +6,26 @@ The assistant is a concise, professional IT support analyst for employees. It an
 
 It must never request passwords, one-time codes, recovery codes, or sensitive email content. Suspected phishing, malware, account compromise, lost or stolen devices, high-impact outages, privileged access requests, and unsupported questions are escalated to Human IT Support.
 
-Every model response uses the existing structured JSON contract:
+The FAQ reply uses this JSON contract (Groq writes text only; routing fields are ignored):
 
 ```json
 {
   "response": "<support response>",
-  "confidence": 0.0,
-  "escalate": false,
-  "escalation_reason": null,
-  "stage_complete": false,
   "sop_gap": false
 }
 ```
 
-## Qualification
+## Qualification (slot filling)
 
-After a supported non-greeting request, the workflow collects three details one at a time:
-
-1. Employee name or identifier, if they are comfortable sharing it.
-2. The issue and its impact on work.
-3. Device, operating system, and exact error message.
+After a supported, non-greeting request the assistant first asks for an optional `requester`
+(name or employee ID — "skip" declines it; stored on the ticket), then fills `issue_category`,
+`problem_details`, `error_message`, `device_os`, `impact`. Groq extracts any slots stated in
+each message (extraction only); the assistant then asks only for the missing ones, one at a
+time, phrased for the issue category. A vague description ("not working properly") gets one
+category-specific follow-up. Once all slots are filled, the matching SOP `self_help_steps`
+are offered and the employee is asked whether they worked. A ticket is raised only if the
+problem is unresolved or the employee asks for one; its severity comes from the session's
+peak risk and the reported impact (`router.ticket_severity`).
 
 No secrets are requested during qualification.
 
@@ -42,5 +42,5 @@ run_turn(state, msg)
   handler   -> faq_handler (Groq writes the reply) | qualify_handler | escalate_handler | summary_handler
 ```
 
-Groq only generates FAQ reply text (`response`, `confidence`, `sop_gap`) and the session summary. It never
+Groq only generates FAQ reply text (`response`, `sop_gap`), extracts slot values, and writes the session summary. It never
 chooses a route; an `sop_gap` it reports is passed to the router as a rule flag.

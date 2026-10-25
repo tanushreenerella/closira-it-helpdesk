@@ -27,12 +27,18 @@ from backend import pipeline
 
 
 CASES_PATH = Path(__file__).with_name("test_cases.json")
-SIDE_EFFECTS = ("llm_call", "record_escalation", "log_decision", "create_ticket", "save_final_summary")
+SIDE_EFFECTS = ("llm_call", "llm_extract", "record_escalation", "log_decision", "create_ticket", "save_final_summary")
 
 
 def deterministic_llm_response(_system: str, _messages: list[dict[str, str]]) -> dict[str, Any]:
     """Offline stand-in for Groq's FAQ reply."""
-    return {"response": "I can help with that.", "confidence": 0.9, "sop_gap": False}
+    return {"response": "I can help with that.", "sop_gap": False}
+
+
+def no_extraction(_system: str, _messages: list[dict[str, str]]) -> dict[str, Any]:
+    """Offline stand-in for Groq slot extraction: extract nothing, so the
+    pipeline's deterministic fallbacks fill the slots."""
+    return {}
 
 
 @contextmanager
@@ -40,7 +46,8 @@ def offline_dependencies() -> Iterator[None]:
     """Disable only external effects while retaining the production pipeline."""
     originals = {name: getattr(pipeline, name) for name in SIDE_EFFECTS}
     pipeline.llm_call = deterministic_llm_response
-    for name in SIDE_EFFECTS[1:]:
+    pipeline.llm_extract = no_extraction
+    for name in SIDE_EFFECTS[2:]:
         setattr(pipeline, name, lambda *_args, **_kwargs: None)
     try:
         yield

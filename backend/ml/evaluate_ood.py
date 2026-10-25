@@ -29,7 +29,8 @@ import pandas as pd
 from sklearn.metrics import precision_recall_fscore_support
 
 from .inference import available_models, load_predictor, to_prediction
-from ..router import keyword_flags, risk_score, route
+from ..router import (HARD_OVERRIDE_FLAGS, INTENT_CONFIDENCE_THRESHOLD, UNCERTAIN_INTENT, emotion_only_risk,
+                      keyword_flags, risk_score, route)
 
 ML_DIR = Path(__file__).resolve().parent
 OOD_PATH = ML_DIR / "data" / "ood" / "it_messages_616.csv"
@@ -57,11 +58,17 @@ def recall_by_legacy_label(df: pd.DataFrame, col: str) -> dict:
 def evaluate(model: str) -> dict:
     df = pd.read_csv(OOD_PATH)
     preds = [to_prediction(p, model) for p in load_predictor(model)(df["text"].astype(str).tolist())]
-    df["intent"] = [p["intent"] for p in preds]
+    df["intent_raw"] = [p["intent"] for p in preds]
+    # Same rule as the pipeline: a low-confidence intent is "uncertain" and
+    # left out of routing and risk.
+    certain = [p["intent_confidence"] >= INTENT_CONFIDENCE_THRESHOLD for p in preds]
+    df["intent"] = [p["intent"] if ok else UNCERTAIN_INTENT for p, ok in zip(preds, certain)]
     df["emotion"] = [p["emotion"] for p in preds]
-    df["risk"] = [risk_score(p["intent"], p["emotion"], p["intent_probs"], p["emotion_probs"]) for p in preds]
     flags = [keyword_flags(t) for t in df["text"]]
-    df["kw"] = [any(f.values()) for f in flags]
+    df["risk"] = [risk_score(p["intent"], p["emotion"], p["intent_probs"], p["emotion_probs"]) if ok
+                  else emotion_only_risk(p["emotion"], p["emotion_probs"], p["emotion_confidence"], f)
+                  for p, ok, f in zip(preds, certain, flags)]
+    df["kw"] = [any(v for k, v in f.items() if k in HARD_OVERRIDE_FLAGS) for f in flags]
     df["model_only"] = [route(i, e, r, {})[0] == "escalate" for i, e, r in zip(df["intent"], df["emotion"], df["risk"])]
     df["router"] = [route(i, e, r, f)[0] == "escalate" for i, e, r, f in zip(df["intent"], df["emotion"], df["risk"], flags)]
     gold = (df["label"] != "normal").tolist()
@@ -73,12 +80,15 @@ def evaluate(model: str) -> dict:
             "n": len(part),
             "emotion_distribution": dict(Counter(part["emotion"]).most_common()),
             "intent_distribution": dict(Counter(part["intent"]).most_common()),
+            "raw_intent_distribution": dict(Counter(part["intent_raw"]).most_common()),
             "emotion_consistent_rate": float(part["emotion"].isin(consistent).mean()) if consistent else None,
             "mean_risk": float(part["risk"].mean()),
         }
 
     return {
         "model": model, "n": len(df), "legacy_labels": dict(Counter(df["label"])),
+        "uncertain_intent_rate": float((df["intent"] == UNCERTAIN_INTENT).mean()),
+        "intent_confidence_threshold": INTENT_CONFIDENCE_THRESHOLD,
         "escalation": {name: {**binary(gold, df[col].tolist()), "escalate_rate_by_legacy_label": recall_by_legacy_label(df, col)}
                        for name, col in (("keyword_rules", "kw"), ("model_only", "model_only"), ("router", "router"))},
         "label_alignment": alignment,

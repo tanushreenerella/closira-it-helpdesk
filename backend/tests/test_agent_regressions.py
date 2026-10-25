@@ -46,6 +46,7 @@ def _no_external_side_effects(monkeypatch):
     monkeypatch.setattr(pipeline, "log_decision", lambda *a, **k: None)
     monkeypatch.setattr(pipeline, "create_ticket", lambda *a, **k: None)
     monkeypatch.setattr(pipeline, "classify_message", lambda text: prediction())
+    monkeypatch.setattr(pipeline, "llm_extract", lambda system, messages: {})
 
 
 # ── 1. escalation must read the last HUMAN message ──────────────────────────
@@ -164,27 +165,37 @@ def test_classify_reuses_cache_when_source_message_matches(monkeypatch):
     assert action != "escalate"
 
 
-# ── 4. qualify stops at 3 answers and hands off to summary ──────────────────
+# ── 4. filling the last slot stops asking and moves on ──────────────────────
+# (was: "qualify stops at 3 answers and hands off to summary" — the fixed
+# 3-question script is now slot filling, and a ticket waits until the SOP
+# self-help steps have been tried.)
 
-def test_qualify_handler_completes_after_third_answer_and_goes_to_summary():
-    third_answer = "Dell laptop, Windows 11, error code 0x80070005"
+def test_qualify_handler_stops_after_last_slot_and_offers_sop_steps():
+    last_answer = "Dell laptop, Windows 11"
     state = make_state(
         stage="qualify",
         qualification_started=True,
+        pending_slot="device_os",
         qualification={
-            "answer_1": "Jordan Smith",
-            "answer_2": "VPN keeps disconnecting, blocking my work",
+            "requester": "Jordan Smith, E1234",
+            "issue_category": "vpn",
+            "problem_details": "VPN connects and then drops every few minutes",
+            "error_message": "error 809",
+            "impact": "I can't join client calls",
         },
-        messages=[human(third_answer)],
-        intent_source_message=third_answer,
+        messages=[human(last_answer)],
+        intent_source_message=last_answer,
     )
 
     result = pipeline.qualify_handler(state)
 
-    assert result["stage"] == "summary"
-    assert result["stage"] != "faq"
-    assert len(result["qualification"]) == 3
-    assert result["qualification"]["answer_3"] == third_answer
+    assert result["stage"] == "troubleshoot"
+    assert result["stage"] not in ("faq", "qualify")
+    assert result["qualification"]["device_os"] == last_answer
+    assert all(result["qualification"].get(slot) for slot in pipeline.SLOTS)
+    assert result["pending_slot"] == ""
+    assert not result.get("ready_for_ticket")
 
     payload = json.loads(result["messages"][-1]["content"])
-    assert payload["stage_complete"] is True
+    assert "approved VPN client" in payload["response"]
+    assert payload["ticket_id"] is None

@@ -18,6 +18,7 @@ WELCOME = (
 STAGE_LABELS = {
     "faq":       "📋 IT Support",
     "qualify":   "✅ Issue Qualification",
+    "troubleshoot": "🔧 Troubleshooting",
     "escalated": "🔴 Escalated",
     "summary":   "📊 Summary"
 }
@@ -25,11 +26,6 @@ STAGE_LABELS = {
 
 def print_ai(text: str, meta: dict = None):
     print(f"\n  🛠️ IT Support: {text}")
-    if meta and meta.get("confidence") is not None:
-        conf = float(meta["confidence"])
-        bar = "█" * int(conf * 10) + "░" * (10 - int(conf * 10))
-        emoji = "🟢" if conf >= 0.75 else "🟡" if conf >= 0.5 else "🔴"
-        print(f"     {emoji} Confidence: [{bar}] {int(conf*100)}%")
     if meta and meta.get("intent"):
         print(f"     🏷️  intent={meta['intent']} emotion={meta.get('emotion')} risk={meta.get('risk', 0):.2f}")
     if meta and meta.get("escalate"):

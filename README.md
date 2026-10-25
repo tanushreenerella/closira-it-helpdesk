@@ -79,8 +79,15 @@ predicts one of 7 intents (`information_request`, `issue_report`, `action_reques
 (`angry`, `frustrated`, `confused`, `sad`, `happy`, `neutral`); `router.risk_score`
 turns them into a per-turn risk in [0, 1]. `router.route` picks `faq | qualify |
 escalate | summary`. Keyword rules (anger, explicit human request, repeated failure,
-security incident), SOP gaps and the repeat-loop guard are hard overrides. Groq only
-writes FAQ reply text and the session summary — it never picks a route.
+security incident), SOP gaps and the repeat-loop guard are hard overrides. Intents
+below 0.5 confidence are reported as `uncertain` and ignored by routing; answers to a
+slot question skip intent classification. For both, risk comes from emotion + emotion
+keyword rules only, so a confident frustrated/angry message can still escalate alone. Groq only writes FAQ reply text, extracts
+slot values and writes the session summary — it never picks a route.
+
+Support requests go through slot filling (optional requester name/ID, category,
+details, error, device/OS, impact), then the SOP self-help steps; a ticket is raised only if those don't fix it
+or the employee asks. Ticket severity = f(peak risk, impact).
 
 The runtime loads `backend/ml/artifacts/multitask/` if present, else the TF-IDF
 baseline in `backend/ml/artifacts/baseline/`, else runs degraded (neutral
