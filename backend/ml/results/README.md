@@ -38,6 +38,14 @@ is hand-checked; other intents are partly separated by source domain. Emotion
 Gold = legacy label != `normal` (462 of 616 should escalate). Router = what the pipeline
 does in the FAQ stage (keyword hard overrides + model risk).
 
+**Caveat — synthetic data.** The 616 messages were generated with an LLM
+(`legacy/nlp/generate_dataset.py`), not collected from real employees, and the new
+keyword phrases were mined from the same set (its calibration half). Held-out numbers
+are therefore in-distribution for both the phrasing and the keywords: expect lower
+recall on real helpdesk traffic, where people phrase human requests and repeated
+failures in ways this generator didn't. Treat these as a regression benchmark, not an
+estimate of production performance.
+
 **Method.** There is no other IT-domain escalation-labelled data, so the 616 messages
 are split 50/50 stratified by legacy label (seed 42, `calibrate.py`). The keyword-list
 expansion and the threshold search used **only the calibration half**; the held-out
@@ -48,63 +56,61 @@ half has only 77 normal messages, so one false alarm = 1.3 points of false-alarm
 
 | Step | Model | Precision | Recall | F1 | False alarms |
 |---|---|---|---|---|---|
-| Old keywords, old thresholds (intent 0.5 / risk 0.75) | TF-IDF | 0.944 | 0.437 | 0.598 | 0.078 |
+| Old keywords, thresholds intent 0.5 / risk 0.75 / complaint 0.5 | TF-IDF | 0.944 | 0.437 | 0.598 | 0.078 |
 | | DistilBERT | 0.982 | 0.468 | 0.633 | 0.026 |
-| + expanded keywords, old thresholds | TF-IDF | 0.946 | 0.762 | 0.844 | 0.130 |
-| | DistilBERT | 0.969 | 0.801 | 0.877 | 0.078 |
-| **+ calibrated thresholds (current: intent 0.4 / risk 0.55 / complaint 0.5)** | TF-IDF | 0.932 | 0.831 | 0.879 | 0.182 |
-| | **DistilBERT** | **0.940** | **0.875** | **0.906** | **0.169** |
-| *(rejected: ~80% recall target, risk 0.40)* | *DistilBERT* | *0.841* | *0.827* | *0.834* | *0.468* |
+| **Expanded keywords, same thresholds (current)** | TF-IDF | 0.946 | 0.762 | 0.844 | 0.130 |
+| | **DistilBERT** | **0.969** | **0.801** | **0.877** | **0.078** |
 
-Held-out recall by legacy label, current thresholds:
+Held-out recall by legacy label, current router:
 
 | | explicit_human_request | frustrated | repeated_confusion | normal (false alarm) |
 |---|---|---|---|---|
-| TF-IDF | 0.935 | 0.766 | 0.792 | 0.182 |
-| DistilBERT | 0.948 | 0.883 | 0.792 | 0.169 |
+| TF-IDF | 0.935 | 0.623 | 0.727 | 0.130 |
+| DistilBERT | 0.935 | 0.753 | 0.714 | 0.078 |
 
-**Threshold choice.** Selection rule: best calibration-half recall with false alarms
-<= 10%. For DistilBERT that is intent 0.4 / risk 0.55 / complaint 0.5 (calibration half:
-P 0.977, R 0.918, false alarms 0.065). **On the held-out half false alarms rise to
-0.169**, above the 10% budget — 13 of 77 normal messages vs 5 of 77 on the calibration
-half. Other operating points (held-out, DistilBERT, from `calibration_multitask.json`):
+**Threshold choice.** The thresholds stay at intent 0.5 / risk 0.75 / complaint 0.5
+(`router.py`, pinned by `test_routing_thresholds_are_the_chosen_operating_point`). The
+best-recall point within a 10% calibration-half false-alarm budget (intent 0.4 / risk
+0.55) was tried and rejected: its false alarms rose to 16.9% on the held-out half
+(13 of 77 normal messages vs 5 of 77 on the calibration half). Operating points for
+DistilBERT, held-out half (`calibration_multitask.json`):
 
-| False-alarm budget (calibration half) | Thresholds (intent / risk / complaint) | Held-out P | R | F1 | False alarms |
+| Operating point | Thresholds (intent / risk / complaint) | Held-out P | R | F1 | False alarms |
 |---|---|---|---|---|---|
-| keep old thresholds | 0.5 / 0.75 / 0.5 | 0.969 | 0.801 | 0.877 | 0.078 |
-| <= 5% | 0.4 / 0.60 / 0.5 | 0.960 | 0.823 | 0.886 | 0.104 |
-| **<= 10% (current)** | 0.4 / 0.55 / 0.5 | 0.940 | 0.875 | 0.906 | 0.169 |
+| **current** | 0.5 / 0.75 / 0.5 | 0.969 | 0.801 | 0.877 | 0.078 |
+| <= 5% calibration false alarms | 0.4 / 0.60 / 0.5 | 0.960 | 0.823 | 0.886 | 0.104 |
+| <= 10% | 0.4 / 0.55 / 0.5 | 0.940 | 0.875 | 0.906 | 0.169 |
 | <= 20% | 0.4 / 0.525 / 0.5 | 0.917 | 0.905 | 0.911 | 0.247 |
+| ~80% recall target | 0.8 / 0.40 / 0.5 | 0.841 | 0.827 | 0.834 | 0.468 |
 
-The thresholds are calibrated for DistilBERT. The TF-IDF fallback runs with the same
-values (its own <= 10% point would be intent 0.3 / risk 0.55 / complaint 0.55: held-out
-P 0.930, R 0.862, false alarms 0.195).
+These were chosen for DistilBERT; the TF-IDF fallback runs with the same values.
 
-**Where the gain came from.** Most of it is the keyword expansion: explicit human
-requests went from ~0.6 to ~0.95 recall, repeated confusion from ~0.05 to ~0.75. Part of
-that is a bug fix — the 616 messages use curly apostrophes ("doesn’t"), which the
-keyword lists never matched. DistilBERT adds most on `frustrated` (0.88 vs 0.77).
+**Where the gain came from.** Almost all of it is the keyword expansion: explicit human
+requests went from ~0.6 to ~0.94 held-out recall, repeated confusion from ~0.05 to
+~0.71. Part of that is a bug fix — the 616 messages use curly apostrophes ("doesn’t"),
+which the keyword lists never matched. DistilBERT adds most on `frustrated` (0.75 vs
+0.62) and halves TF-IDF's false alarms.
 
 **Cross-domain check (ABCD validation turns, retail chat, rule-derived labels, ~1%
-positive; not used for selection):** DistilBERT P 0.25 / R 0.46 at the old thresholds —
-see `calibration_*.json`. Its labels come from different keyword rules, so treat it only
-as a sign of how much the thresholds over-escalate outside IT support.
+positive; not used for selection):** DistilBERT P 0.25 / R 0.46 at the current
+thresholds (`calibration_*.json`). Its labels come from different keyword rules, so treat
+it only as a sign of how much the router over- or under-escalates outside IT support.
 
 ### All 616 messages (`ood_*.json`, current router)
 
-Includes the calibration half, so it is optimistic.
+Includes the calibration half the keywords were mined from, so it is optimistic.
 
 | | Precision | Recall | F1 | Frustrated | Repeated confusion | False alarms |
 |---|---|---|---|---|---|---|
-| TF-IDF | 0.946 | 0.868 | 0.905 | 0.79 | 0.86 | 0.15 |
-| DistilBERT | 0.958 | 0.896 | 0.926 | 0.89 | 0.83 | 0.12 |
+| TF-IDF | 0.966 | 0.794 | 0.872 | 0.63 | 0.79 | 0.08 |
+| DistilBERT | 0.984 | 0.818 | 0.894 | 0.72 | 0.77 | 0.04 |
 | Keyword rules only | 0.982 | 0.723 | 0.833 | 0.45 | 0.76 | 0.04 |
 
 ### Offline end-to-end eval (17 scripted cases)
 
 | | Escalation F1 | Cases passed |
 |---|---|---|
-| TF-IDF, old keywords + thresholds | 0.900 | 15 / 17 |
-| DistilBERT, old keywords + thresholds | 0.952 | 16 / 17 |
-| TF-IDF, current | 1.000 | 17 / 17 |
+| TF-IDF, old keywords | 0.900 | 15 / 17 |
+| DistilBERT, old keywords | 0.952 | 16 / 17 |
+| TF-IDF, current | 0.952 | 16 / 17 (misses `frustrated_vpn`) |
 | DistilBERT, current | 1.000 | 17 / 17 |

@@ -77,3 +77,11 @@ def test_expanded_repeated_failure_phrases(text):
 def test_expanded_lists_do_not_fire_on_plain_requests(text):
     assert not explicit_escalation(text)[0]
     assert not repeated_failure_check(text)[0]
+
+
+def test_routing_thresholds_are_the_chosen_operating_point():
+    # Chosen on the calibration half (backend/ml/results/README.md): expanded keywords +
+    # these thresholds -> held-out recall 0.80 at 7.8% false alarms. Change deliberately,
+    # together with thresholds_selected.json and the README table.
+    from backend.router import INTENT_CONFIDENCE_THRESHOLD
+    assert (INTENT_CONFIDENCE_THRESHOLD, RISK_ESCALATE_THRESHOLD, COMPLAINT_ESCALATE_THRESHOLD) == (0.5, 0.75, 0.5)

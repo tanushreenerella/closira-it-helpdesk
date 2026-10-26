@@ -22,15 +22,16 @@ EMOTION_RISK = {"angry": 1.0, "frustrated": 0.75, "confused": 0.35, "sad": 0.4,
 INTENT_RISK = {"complaint": 0.8, "issue_report": 0.3, "feedback": 0.2, "action_request": 0.15,
                "information_request": 0.05, "chit_chat": 0.0, "appreciation": 0.0}
 
-# Calibrated for the multitask DistilBERT (backend/ml/calibrate.py): best
-# recall with <= 10% false alarms on the calibration half of the 616 legacy
-# IT messages. See backend/ml/results/README.md for held-out numbers.
-RISK_ESCALATE_THRESHOLD = 0.55       # escalate on risk alone
+# Chosen with backend/ml/calibrate.py for the multitask DistilBERT: with the
+# expanded keyword lists these original values give held-out recall 0.80 at
+# 7.8% false alarms; the lower-threshold operating points traded more false
+# alarms for recall. See backend/ml/results/README.md.
+RISK_ESCALATE_THRESHOLD = 0.75       # escalate on risk alone
 COMPLAINT_ESCALATE_THRESHOLD = 0.5   # lower bar when the intent is a complaint
 
 # Below this intent confidence the intent is reported as "uncertain" and
 # ignored by routing and risk (emotion still counts).
-INTENT_CONFIDENCE_THRESHOLD = 0.4
+INTENT_CONFIDENCE_THRESHOLD = 0.5
 UNCERTAIN_INTENT = "uncertain"
 # Intent label for a message that answers a slot / troubleshooting question —
 # intent classification is skipped for those.
