@@ -1,0 +1,56 @@
+{
+  "model": "multitask DistilBERT (backend/ml/artifacts/multitask, Colab-trained)",
+  "intent_test_split": {
+    "description": "processed/intent_test.csv.gz \u2014 the held-out split of the training data build (Banking77 + CLINC150 + SNIPS + TWCS weak labels)",
+    "rows": 4983,
+    "accuracy": 0.9767,
+    "macro_f1": 0.9819,
+    "majority_class_baseline_accuracy": 0.3406,
+    "majority_class": "information_request",
+    "label_distribution": {
+      "information_request": 1697,
+      "action_request": 1090,
+      "issue_report": 755,
+      "appreciation": 403,
+      "complaint": 400,
+      "feedback": 373,
+      "chit_chat": 265
+    }
+  },
+  "emotion_test_split": {
+    "description": "processed/emotion_test.csv.gz \u2014 GoEmotions single-label (official train+dev+test pooled, deduplicated, re-split), mapped to 6 emotions. The neutral downsampling rule (<= 2x the largest other class) did not trigger in this build: 16,021 neutral vs a cap of 31,388 (2 x 15,694 happy), so this split already has the natural single-label distribution.",
+    "rows": 3998,
+    "accuracy": 0.6626,
+    "macro_f1": 0.5717,
+    "majority_class_baseline_accuracy": 0.3962,
+    "majority_class": "neutral",
+    "label_distribution": {
+      "neutral": 1584,
+      "happy": 1527,
+      "frustrated": 360,
+      "sad": 236,
+      "angry": 187,
+      "confused": 104
+    }
+  },
+  "emotion_goemotions_natural_test": {
+    "description": "GoEmotions OFFICIAL test.tsv, single-label examples only, mapped to 6 emotions with emotion_map.json, neutral NOT downsampled (natural distribution). Texts also present in our emotion train/val split were removed (the training build pooled GoEmotions train/dev/test before re-splitting).",
+    "official_test_rows": 5427,
+    "single_label_rows": 4590,
+    "dropped_unmapped_labels": 508,
+    "removed_seen_in_training": 3681,
+    "rows": 401,
+    "accuracy": 0.6334,
+    "macro_f1": 0.5137,
+    "majority_class_baseline_accuracy": 0.4015,
+    "majority_class": "happy",
+    "label_distribution": {
+      "happy": 161,
+      "neutral": 154,
+      "frustrated": 37,
+      "sad": 26,
+      "angry": 19,
+      "confused": 4
+    }
+  }
+}
