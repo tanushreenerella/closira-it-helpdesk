@@ -11,39 +11,39 @@
   "intent_confidence_threshold": 0.5,
   "escalation": {
     "keyword_rules": {
-      "precision": 0.9870967741935484,
-      "recall": 0.33116883116883117,
-      "f1": 0.4959481361426256,
-      "accuracy": 0.49512987012987014,
+      "precision": 0.9823529411764705,
+      "recall": 0.7229437229437229,
+      "f1": 0.8329177057356608,
+      "accuracy": 0.7824675324675324,
       "escalate_rate_by_legacy_label": {
-        "explicit_human_request": 0.6038961038961039,
-        "frustrated": 0.37012987012987014,
-        "normal": 0.012987012987012988,
-        "repeated_confusion": 0.01948051948051948
+        "explicit_human_request": 0.961038961038961,
+        "frustrated": 0.44805194805194803,
+        "normal": 0.03896103896103896,
+        "repeated_confusion": 0.7597402597402597
       }
     },
     "model_only": {
-      "precision": 0.9385964912280702,
-      "recall": 0.23160173160173161,
-      "f1": 0.3715277777777778,
-      "accuracy": 0.41233766233766234,
+      "precision": 0.949438202247191,
+      "recall": 0.3658008658008658,
+      "f1": 0.528125,
+      "accuracy": 0.5097402597402597,
       "escalate_rate_by_legacy_label": {
-        "explicit_human_request": 0.01948051948051948,
-        "frustrated": 0.564935064935065,
-        "normal": 0.045454545454545456,
-        "repeated_confusion": 0.11038961038961038
+        "explicit_human_request": 0.03896103896103896,
+        "frustrated": 0.5909090909090909,
+        "normal": 0.05844155844155844,
+        "repeated_confusion": 0.4675324675324675
       }
     },
     "router": {
-      "precision": 0.957345971563981,
-      "recall": 0.43722943722943725,
-      "f1": 0.600297176820208,
-      "accuracy": 0.5633116883116883,
+      "precision": 0.9657894736842105,
+      "recall": 0.7943722943722944,
+      "f1": 0.8717339667458432,
+      "accuracy": 0.8246753246753247,
       "escalate_rate_by_legacy_label": {
-        "explicit_human_request": 0.6103896103896104,
-        "frustrated": 0.5844155844155844,
-        "normal": 0.05844155844155844,
-        "repeated_confusion": 0.11688311688311688
+        "explicit_human_request": 0.961038961038961,
+        "frustrated": 0.6298701298701299,
+        "normal": 0.08441558441558442,
+        "repeated_confusion": 0.7922077922077922
       }
     }
   },
@@ -77,7 +77,7 @@
         "appreciation": 1
       },
       "emotion_consistent_rate": null,
-      "mean_risk": 0.40468766233766235
+      "mean_risk": 0.41202142857142854
     },
     "frustrated": {
       "n": 154,
@@ -105,7 +105,7 @@
         "feedback": 1
       },
       "emotion_consistent_rate": 0.4025974025974026,
-      "mean_risk": 0.6587954545454545
+      "mean_risk": 0.6700740259740259
     },
     "normal": {
       "n": 154,
@@ -137,7 +137,7 @@
         "chit_chat": 1
       },
       "emotion_consistent_rate": 0.9155844155844156,
-      "mean_risk": 0.28972857142857145
+      "mean_risk": 0.2981915584415585
     },
     "repeated_confusion": {
       "n": 154,
@@ -168,30 +168,16 @@
         "information_request": 2
       },
       "emotion_consistent_rate": 0.2727272727272727,
-      "mean_risk": 0.4002233766233766
+      "mean_risk": 0.5850298701298702
     }
   },
   "examples_missed_by_router": [
-    {
-      "text": "Please connect me to staff",
-      "label": "explicit_human_request",
-      "intent": "action_request",
-      "emotion": "angry",
-      "risk": 0.7094
-    },
     {
       "text": "You have not answered my question twice",
       "label": "repeated_confusion",
       "intent": "chit_chat",
       "emotion": "frustrated",
       "risk": 0.5082
-    },
-    {
-      "text": "That did not answer it again",
-      "label": "repeated_confusion",
-      "intent": "chit_chat",
-      "emotion": "frustrated",
-      "risk": 0.6497
     },
     {
       "text": "Why are you repeating yourself?",
@@ -213,13 +199,6 @@
       "intent": "issue_report",
       "emotion": "frustrated",
       "risk": 0.6964
-    },
-    {
-      "text": "I\u2019ve tried all the suggested steps, still can\u2019t access my account. This delay is ruining my workday.",
-      "label": "frustrated",
-      "intent": "issue_report",
-      "emotion": "frustrated",
-      "risk": 0.6188
     },
     {
       "text": "My account is locked after a single failed login attempt\u2014no warning, no unlock option. This is outrageous!",
@@ -276,6 +255,27 @@
       "intent": "issue_report",
       "emotion": "confused",
       "risk": 0.5393
+    },
+    {
+      "text": "Every time I try to sign in, it says my password is incorrect. I've checked it multiple times and it works elsewhere.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "neutral",
+      "risk": 0.441
+    },
+    {
+      "text": "My Wi\u2011Fi keeps dropping right before a conference call. I'm losing every minute!",
+      "label": "frustrated",
+      "intent": "uncertain",
+      "emotion": "neutral",
+      "risk": 0.1058
+    },
+    {
+      "text": "Every time I try to access the intranet, I get a timeout. This delay is killing productivity.",
+      "label": "frustrated",
+      "intent": "uncertain",
+      "emotion": "neutral",
+      "risk": 0.1714
     }
   ],
   "examples_false_alarm": [
@@ -284,6 +284,12 @@
       "intent": "uncertain",
       "emotion": "frustrated",
       "risk": 0.75
+    },
+    {
+      "text": "I\u2019m able to log in on my phone, but my laptop keeps asking for a new password.",
+      "intent": "issue_report",
+      "emotion": "neutral",
+      "risk": 0.5074
     },
     {
       "text": "I\u2019m able to connect to the network, but the internet speed is unusually slow during video calls.",
@@ -320,6 +326,24 @@
       "intent": "complaint",
       "emotion": "neutral",
       "risk": 0.6555
+    },
+    {
+      "text": "I added my new office Wi\u2011Fi, but the VPN keeps asking for a proxy server address.",
+      "intent": "uncertain",
+      "emotion": "neutral",
+      "risk": 0.75
+    },
+    {
+      "text": "I installed the new VPN client, but it keeps asking for a certificate that I don't have.",
+      "intent": "issue_report",
+      "emotion": "neutral",
+      "risk": 0.3156
+    },
+    {
+      "text": "I added a new device but the VPN keeps asking for credentials.",
+      "intent": "uncertain",
+      "emotion": "neutral",
+      "risk": 0.75
     },
     {
       "text": "The VPN keeps disconnecting after a few minutes of inactivity while I work from home.",

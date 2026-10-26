@@ -1,0 +1,95 @@
+{
+  "model": "distilbert-base-uncased",
+  "device": "cuda",
+  "best_epoch": 3,
+  "best_val_mean_macro_f1": 0.7610695356004324,
+  "config": {
+    "model": "distilbert-base-uncased",
+    "out": "/content/closira/backend/ml/artifacts/multitask",
+    "results_name": "multitask",
+    "epochs": 6,
+    "batch_size": 32,
+    "lr": 2e-05,
+    "patience": 2,
+    "limit": null,
+    "fp16": true,
+    "seed": 42,
+    "log_every": 200
+  },
+  "train_sizes": {
+    "intent": 39861,
+    "emotion": 31979
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "seconds": 165.1,
+      "train_loss_intent": 0.4356886721059178,
+      "train_loss_emotion": 1.1464103666727654,
+      "val_macro_f1_intent": 0.9634950875602765,
+      "val_macro_f1_emotion": 0.5285912235813844,
+      "val_mean_macro_f1": 0.7460431555708305
+    },
+    {
+      "epoch": 2,
+      "seconds": 166.3,
+      "train_loss_intent": 0.0683998624453348,
+      "train_loss_emotion": 0.7683540234165819,
+      "val_macro_f1_intent": 0.9743623183868141,
+      "val_macro_f1_emotion": 0.5232525468868164,
+      "val_mean_macro_f1": 0.7488074326368153
+    },
+    {
+      "epoch": 3,
+      "seconds": 166.5,
+      "train_loss_intent": 0.02900463768825186,
+      "train_loss_emotion": 0.5480052962492595,
+      "val_macro_f1_intent": 0.9812328611778819,
+      "val_macro_f1_emotion": 0.5409062100229831,
+      "val_mean_macro_f1": 0.7610695356004324
+    },
+    {
+      "epoch": 4,
+      "seconds": 167.2,
+      "train_loss_intent": 0.014811476924897465,
+      "train_loss_emotion": 0.38416963108302504,
+      "val_macro_f1_intent": 0.9804074189859623,
+      "val_macro_f1_emotion": 0.526234034258229,
+      "val_mean_macro_f1": 0.7533207266220956
+    },
+    {
+      "epoch": 5,
+      "seconds": 167.2,
+      "train_loss_intent": 0.008697807028458751,
+      "train_loss_emotion": 0.2645425009892515,
+      "val_macro_f1_intent": 0.9827044000293613,
+      "val_macro_f1_emotion": 0.5324715716750937,
+      "val_mean_macro_f1": 0.7575879858522275
+    }
+  ],
+  "test": {
+    "intent": {
+      "macro_f1": 0.9819224014015153,
+      "per_class_f1": {
+        "information_request": 0.973325429756965,
+        "issue_report": 0.9665775401069518,
+        "action_request": 0.969258589511754,
+        "complaint": 0.9962546816479401,
+        "feedback": 0.9893048128342246,
+        "appreciation": 0.9937733499377335,
+        "chit_chat": 0.9849624060150376
+      }
+    },
+    "emotion": {
+      "macro_f1": 0.5717462941389226,
+      "per_class_f1": {
+        "angry": 0.5064935064935064,
+        "frustrated": 0.42792792792792794,
+        "confused": 0.4342105263157895,
+        "sad": 0.6006944444444444,
+        "happy": 0.7997179125528914,
+        "neutral": 0.6614334470989761
+      }
+    }
+  }
+}

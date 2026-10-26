@@ -22,6 +22,10 @@ EMOTION_RISK = {"angry": 1.0, "frustrated": 0.75, "confused": 0.35, "sad": 0.4,
 INTENT_RISK = {"complaint": 0.8, "issue_report": 0.3, "feedback": 0.2, "action_request": 0.15,
                "information_request": 0.05, "chit_chat": 0.0, "appreciation": 0.0}
 
+# Chosen with backend/ml/calibrate.py for the multitask DistilBERT: with the
+# expanded keyword lists these original values give held-out recall 0.80 at
+# 7.8% false alarms; the lower-threshold operating points traded more false
+# alarms for recall. See backend/ml/results/README.md.
 RISK_ESCALATE_THRESHOLD = 0.75       # escalate on risk alone
 COMPLAINT_ESCALATE_THRESHOLD = 0.5   # lower bar when the intent is a complaint
 
@@ -50,7 +54,8 @@ HARD_OVERRIDE_FLAGS = {
 
 # ── Keyword rules (hard overrides) ───────────────────────────────────────────
 def _find_keyword(text: str, keywords: list[str]) -> str | None:
-    text_lower = text.lower()
+    # curly apostrophes ("doesn’t") must match the straight ones in the lists
+    text_lower = text.lower().replace("’", "'").replace("‘", "'")
     return next((kw for kw in keywords if kw in text_lower), None)
 
 
@@ -69,7 +74,11 @@ def explicit_escalation(text: str) -> tuple[bool, str]:
     kw = _find_keyword(text, [
         "speak to a human", "talk to someone", "real person",
         "human", "human agent", "person", "representative", "support agent",
-        "manager", "supervisor", "speak to staff", "transfer me to it support"
+        "manager", "supervisor", "speak to staff", "transfer me to it support",
+        # added from the 616-message calibration half (each hits no "normal" message there)
+        "technician", "tech agent", "live agent", "an agent", "live chat", "it specialist", "need a tech",
+        "transfer me", "over the phone", "connect me to staff", "connect me to someone", "connect me with someone",
+        "chat with me", "speak with", "talk with", "need someone to", "can someone help",
     ])
     return (True, "Customer requested human agent") if kw else (False, "")
 
@@ -79,6 +88,13 @@ def repeated_failure_check(text: str) -> tuple[bool, str]:
     kw = _find_keyword(text, [
         "already tried", "tried again", "tried multiple times",
         "still doesn't work", "still confused", "still do not understand", "nothing is working",
+        # added from the 616-message calibration half (each hits no "normal" message there)
+        "still can't", "still won't", "still shows", "still get", "still unable",
+        "same error", "same problem", "same issue", "same message", "same warning",
+        "nothing works", "nothing changed", "didn't help", "didn't fix", "didn't resolve", "didn't work",
+        "didn't answer", "did not answer", "no luck", "keeps asking", "keeps saying",
+        "you suggested", "you sent", "you recommended", "as instructed", "previous fix", "earlier fix",
+        "your guide", "persists", "tried everything",
     ])
     return (True, f"Repeated failure signal detected: '{kw}'") if kw else (False, "")
 
@@ -159,7 +175,8 @@ def emotion_only_risk(emotion: str | None, emotion_probs: dict | None = None,
 
 
 def route(intent: str, emotion: str, risk: float, keyword_flags: dict | None = None, *,
-          stage: str = "faq", qualification_complete: bool = False) -> tuple[str, str]:
+          stage: str = "faq", qualification_complete: bool = False,
+          risk_threshold: float | None = None, complaint_threshold: float | None = None) -> tuple[str, str]:
     """Pick the next action. Returns (route, reason).
 
     Order of precedence:
@@ -179,9 +196,12 @@ def route(intent: str, emotion: str, risk: float, keyword_flags: dict | None = N
         if value:
             return "escalate", value if isinstance(value, str) else default_reason
 
-    if risk >= RISK_ESCALATE_THRESHOLD:
+    # threshold overrides are for calibration (backend/ml/calibrate.py)
+    risk_threshold = RISK_ESCALATE_THRESHOLD if risk_threshold is None else risk_threshold
+    complaint_threshold = COMPLAINT_ESCALATE_THRESHOLD if complaint_threshold is None else complaint_threshold
+    if risk >= risk_threshold:
         return "escalate", f"High escalation risk ({risk:.2f}, emotion={emotion}, intent={intent})"
-    if intent == "complaint" and risk >= COMPLAINT_ESCALATE_THRESHOLD:
+    if intent == "complaint" and risk >= complaint_threshold:
         return "escalate", f"Complaint with elevated risk ({risk:.2f})"
 
     if flags.get("ticket_request"):

@@ -1,0 +1,306 @@
+{
+  "model": "multitask",
+  "n": 616,
+  "legacy_labels": {
+    "frustrated": 154,
+    "explicit_human_request": 154,
+    "repeated_confusion": 154,
+    "normal": 154
+  },
+  "uncertain_intent_rate": 0.040584415584415584,
+  "intent_confidence_threshold": 0.5,
+  "escalation": {
+    "keyword_rules": {
+      "precision": 0.9823529411764705,
+      "recall": 0.7229437229437229,
+      "f1": 0.8329177057356608,
+      "accuracy": 0.7824675324675324,
+      "escalate_rate_by_legacy_label": {
+        "explicit_human_request": 0.961038961038961,
+        "frustrated": 0.44805194805194803,
+        "normal": 0.03896103896103896,
+        "repeated_confusion": 0.7597402597402597
+      }
+    },
+    "model_only": {
+      "precision": 1.0,
+      "recall": 0.24891774891774893,
+      "f1": 0.3986135181975737,
+      "accuracy": 0.4366883116883117,
+      "escalate_rate_by_legacy_label": {
+        "explicit_human_request": 0.012987012987012988,
+        "frustrated": 0.6753246753246753,
+        "normal": 0.0,
+        "repeated_confusion": 0.05844155844155844
+      }
+    },
+    "router": {
+      "precision": 0.984375,
+      "recall": 0.8181818181818182,
+      "f1": 0.8936170212765957,
+      "accuracy": 0.8538961038961039,
+      "escalate_rate_by_legacy_label": {
+        "explicit_human_request": 0.961038961038961,
+        "frustrated": 0.7207792207792207,
+        "normal": 0.03896103896103896,
+        "repeated_confusion": 0.7727272727272727
+      }
+    }
+  },
+  "label_alignment": {
+    "explicit_human_request": {
+      "n": 154,
+      "emotion_distribution": {
+        "neutral": 106,
+        "confused": 33,
+        "frustrated": 11,
+        "sad": 4
+      },
+      "intent_distribution": {
+        "action_request": 89,
+        "issue_report": 56,
+        "chit_chat": 2,
+        "information_request": 2,
+        "feedback": 2,
+        "uncertain": 2,
+        "complaint": 1
+      },
+      "raw_intent_distribution": {
+        "action_request": 91,
+        "issue_report": 56,
+        "chit_chat": 2,
+        "information_request": 2,
+        "feedback": 2,
+        "complaint": 1
+      },
+      "emotion_consistent_rate": null,
+      "mean_risk": 0.4163155844155844
+    },
+    "frustrated": {
+      "n": 154,
+      "emotion_distribution": {
+        "angry": 52,
+        "sad": 40,
+        "frustrated": 40,
+        "neutral": 13,
+        "confused": 9
+      },
+      "intent_distribution": {
+        "complaint": 93,
+        "issue_report": 46,
+        "uncertain": 8,
+        "action_request": 7
+      },
+      "raw_intent_distribution": {
+        "complaint": 99,
+        "issue_report": 46,
+        "action_request": 9
+      },
+      "emotion_consistent_rate": 0.5974025974025974,
+      "mean_risk": 0.8059811688311689
+    },
+    "normal": {
+      "n": 154,
+      "emotion_distribution": {
+        "neutral": 103,
+        "confused": 32,
+        "sad": 9,
+        "frustrated": 8,
+        "happy": 2
+      },
+      "intent_distribution": {
+        "issue_report": 79,
+        "action_request": 57,
+        "uncertain": 8,
+        "information_request": 6,
+        "appreciation": 3,
+        "feedback": 1
+      },
+      "raw_intent_distribution": {
+        "issue_report": 80,
+        "action_request": 62,
+        "information_request": 7,
+        "appreciation": 3,
+        "feedback": 2
+      },
+      "emotion_consistent_rate": 0.8896103896103896,
+      "mean_risk": 0.3962077922077922
+    },
+    "repeated_confusion": {
+      "n": 154,
+      "emotion_distribution": {
+        "neutral": 86,
+        "confused": 29,
+        "sad": 22,
+        "frustrated": 13,
+        "happy": 4
+      },
+      "intent_distribution": {
+        "issue_report": 120,
+        "action_request": 11,
+        "uncertain": 7,
+        "feedback": 6,
+        "complaint": 4,
+        "chit_chat": 3,
+        "appreciation": 2,
+        "information_request": 1
+      },
+      "raw_intent_distribution": {
+        "issue_report": 123,
+        "action_request": 13,
+        "feedback": 7,
+        "complaint": 4,
+        "chit_chat": 3,
+        "appreciation": 3,
+        "information_request": 1
+      },
+      "emotion_consistent_rate": 0.2727272727272727,
+      "mean_risk": 0.49431558441558443
+    }
+  },
+  "examples_missed_by_router": [
+    {
+      "text": "You have not answered my question twice",
+      "label": "repeated_confusion",
+      "intent": "issue_report",
+      "emotion": "frustrated",
+      "risk": 0.6153
+    },
+    {
+      "text": "Why are you repeating yourself?",
+      "label": "repeated_confusion",
+      "intent": "chit_chat",
+      "emotion": "confused",
+      "risk": 0.3184
+    },
+    {
+      "text": "I\u2019m still blocked from accessing my email. I've already sent a ticket, but no response. I need this fixed now.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "neutral",
+      "risk": 0.6225
+    },
+    {
+      "text": "Every time I enter my username, it says 'access denied'. I've followed the steps, yet the system refuses me. I'm losing my patience.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "frustrated",
+      "risk": 0.7404
+    },
+    {
+      "text": "I reset my password twice, but the new login still fails. The helpdesk email keeps bouncing back. This is a major disruption to my work.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "sad",
+      "risk": 0.5778
+    },
+    {
+      "text": "I\u2019m locked out of my account and the lockout period is longer than promised. I need this fixed immediately or I'll miss deadlines.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "neutral",
+      "risk": 0.5162
+    },
+    {
+      "text": "I can't log into my account after the system update. Every attempt fails and I'm missing a deadline.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "sad",
+      "risk": 0.554
+    },
+    {
+      "text": "I'm locked out of my account for the third time this week. Why does IT keep messing this up?",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "confused",
+      "risk": 0.6163
+    },
+    {
+      "text": "Every time I try to sign in, it says my password is incorrect. I've checked it multiple times and it works elsewhere.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "confused",
+      "risk": 0.564
+    },
+    {
+      "text": "My Wi\u2011Fi keeps dropping right before a conference call. I'm losing every minute!",
+      "label": "frustrated",
+      "intent": "uncertain",
+      "emotion": "sad",
+      "risk": 0.4
+    },
+    {
+      "text": "Network connection is so slow this morning\u2014can't even load email. Why is it so bad?",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "confused",
+      "risk": 0.5594
+    },
+    {
+      "text": "The network is unusable; documents won't sync, and I'm losing hours of work.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "sad",
+      "risk": 0.5821
+    },
+    {
+      "text": "I can\u2019t connect to the VPN because the network is down, and I\u2019m already late for the client call. Fix it!",
+      "label": "frustrated",
+      "intent": "action_request",
+      "emotion": "frustrated",
+      "risk": 0.6336
+    },
+    {
+      "text": "Every time I try to access the intranet, the network times out. This persistent outage is driving me crazy.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "sad",
+      "risk": 0.6957
+    },
+    {
+      "text": "The network keeps glitching and disconnecting. I\u2019m stuck with no internet and I can\u2019t finish my reports.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "sad",
+      "risk": 0.7145
+    }
+  ],
+  "examples_false_alarm": [
+    {
+      "text": "I\u2019m able to log in on my phone, but my laptop keeps asking for a new password.",
+      "intent": "issue_report",
+      "emotion": "neutral",
+      "risk": 0.5319
+    },
+    {
+      "text": "The laptop\u2019s network adapter appears disabled in device manager; it won\u2019t connect to the corporate VPN.",
+      "intent": "issue_report",
+      "emotion": "sad",
+      "risk": 0.5839
+    },
+    {
+      "text": "I added my new office Wi\u2011Fi, but the VPN keeps asking for a proxy server address.",
+      "intent": "action_request",
+      "emotion": "neutral",
+      "risk": 0.2257
+    },
+    {
+      "text": "I installed the new VPN client, but it keeps asking for a certificate that I don't have.",
+      "intent": "action_request",
+      "emotion": "neutral",
+      "risk": 0.4605
+    },
+    {
+      "text": "I added a new device but the VPN keeps asking for credentials.",
+      "intent": "action_request",
+      "emotion": "neutral",
+      "risk": 0.2421
+    },
+    {
+      "text": "I accidentally clicked on a phishing link in an email; my account feels compromised.",
+      "intent": "issue_report",
+      "emotion": "frustrated",
+      "risk": 0.6687
+    }
+  ]
+}

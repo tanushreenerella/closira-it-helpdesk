@@ -8,6 +8,7 @@ neutral, degraded prediction.
 
 from __future__ import annotations
 
+import os
 from functools import lru_cache
 from pathlib import Path
 from typing import Callable, TypedDict
@@ -63,7 +64,10 @@ def load_predictor(name: str) -> Callable[[list[str]], list[dict]]:
 
 @lru_cache(maxsize=1)
 def _default_predictor():
-    models = available_models()
+    # CLOSIRA_CLASSIFIER=multitask|tfidf_logreg pins a model; otherwise the
+    # first available one (multitask before the baseline) is used.
+    pinned = os.environ.get("CLOSIRA_CLASSIFIER", "").strip()
+    models = [pinned] if pinned else available_models()
     if not models:
         message = f"No intent/emotion model found in {ARTIFACTS_DIR}"
         print(f"[classifier] {message}")
