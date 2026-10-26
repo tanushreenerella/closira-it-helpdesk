@@ -1051,9 +1051,15 @@ def run_turn(state: AgentState, msg: str) -> AgentState:
     # risk-only escalation — no keyword rule fired — means "not fixed": take
     # the normal ticket path (requester, then ticket; severity still from
     # peak risk + impact). Keyword escalations still hand off immediately.
+    # A repeated-failure phrase ("same problem", "still won't") there also
+    # just means "not fixed"; only anger, explicit-human and security
+    # keywords force the immediate handoff.
     on_ticket_path = state["stage"] == "troubleshoot" or state.get("pending_slot") == "requester"
-    if action == "escalate" and trigger == "model" and on_ticket_path:
-        log_decision(state["session_id"], "qualify", "fix_check", f"risk-only escalation at fix check ({reason}); ticket path")
+    flags_now = keyword_flags(last_human_message(state) or "")
+    immediate = any(flags_now.get(k) for k in ("security_incident", "angry_keyword", "explicit_human"))
+    soft_trigger = trigger == "model" or (trigger in ("keyword", "both") and flags_now.get("repeated_failure") and not immediate)
+    if action == "escalate" and soft_trigger and on_ticket_path:
+        log_decision(state["session_id"], "qualify", "fix_check", f"risk-only / repeated-failure escalation at fix check ({reason}); ticket path")
         user_msg = last_human_message(state) or ""
         if state.get("pending_slot") == "requester":
             action = "qualify"

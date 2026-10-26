@@ -209,9 +209,12 @@ def run_to_ticket(stubs, impact, level, emotion="neutral", emotion_p=0.9):
 
 
 def test_severity_high_when_risk_is_high(stubs):
-    # first message: frustrated 0.85 x issue_report 0.9 -> risk ~0.735, >= 0.7 but below escalation
-    state = run_to_ticket(stubs, "it slows me down", "degraded", emotion="frustrated", emotion_p=0.85)
-    assert 0.7 <= state["peak_risk"] < pipeline.RISK_ESCALATE_THRESHOLD
+    # calm until the fix check, then risk >= 0.7 there (ticket path, not a handoff)
+    state = to_fix_check(stubs, "sev1")
+    stubs["prediction"] = prediction("issue_report", "frustrated", p=0.9, emotion_p=0.85)
+    state = pipeline.run_turn(state, "it did not help")
+    state = pipeline.run_turn(state, "skip")
+    assert state["peak_risk"] >= 0.7 and state["stage"] == "summary"
     assert stubs["tickets"][-1]["severity"] == "high"
 
 
@@ -234,13 +237,12 @@ def test_severity_low_when_risk_low_and_impact_minor(stubs):
 
 
 def test_severity_uses_peak_risk_not_last_turn(stubs):
-    stubs["prediction"] = prediction("issue_report", "frustrated", emotion_p=0.85)
-    stubs["extract"] = [dict(VPN_FULL)]
-    state = pipeline.run_turn(pipeline.get_initial_state("sev3"), "VPN drops every 10 minutes again, error 809")
-    stubs["prediction"] = prediction("issue_report", "neutral")  # calm slot answers afterwards
-    stubs["extract"] = [{"impact": "slows me down", "impact_level": "degraded"}]
-    state = pipeline.run_turn(state, "slows me down")
-    state = pipeline.run_turn(state, "no")
+    state = to_fix_check(stubs, "sev3")
+    stubs["prediction"] = prediction("issue_report", "frustrated", p=0.9, emotion_p=0.85)
+    state = pipeline.run_turn(state, "it did not help")         # peak risk here
+    stubs["prediction"] = prediction("issue_report", "neutral")  # calm requester answer afterwards
+    stubs["extract"] = [{"requester": "Sam Lee"}]
+    state = pipeline.run_turn(state, "Sam Lee")
     assert state["risk"] < 0.4 <= 0.7 <= state["peak_risk"]
     assert stubs["tickets"][-1]["severity"] == "high"
 
@@ -257,7 +259,7 @@ def test_slot_answers_skip_intent_classification(stubs):
 
 
 def test_low_confidence_intent_is_uncertain_and_ignored(stubs):
-    stubs["prediction"] = prediction("complaint", "neutral", p=0.45, emotion_p=0.9)
+    stubs["prediction"] = prediction("complaint", "neutral", p=pipeline.INTENT_CONFIDENCE_THRESHOLD - 0.05, emotion_p=0.9)
     state = pipeline.classify({**pipeline.get_initial_state("c2"), "messages": [{"role": "user", "content": "the thing"}]})
     assert state["intent_label"] == "uncertain"
     assert state["intent_raw"] == "complaint"
@@ -530,7 +532,7 @@ def test_step_selection_failure_falls_back(stubs, monkeypatch):
 # ── Emotion-only risk for uncertain intents ──────────────────────────────────
 
 def test_confident_frustration_escalates_alone_when_intent_uncertain(stubs):
-    stubs["prediction"] = prediction("issue_report", "frustrated", p=0.4, emotion_p=0.8)
+    stubs["prediction"] = prediction("issue_report", "frustrated", p=pipeline.INTENT_CONFIDENCE_THRESHOLD - 0.1, emotion_p=0.8)
     state = pipeline.run_turn(pipeline.get_initial_state("u1"), "this wifi thing again, seriously")
     assert state["intent_label"] == "uncertain"
     assert state["risk"] >= pipeline.RISK_ESCALATE_THRESHOLD
@@ -539,7 +541,7 @@ def test_confident_frustration_escalates_alone_when_intent_uncertain(stubs):
 
 
 def test_unconfident_emotion_with_uncertain_intent_does_not_escalate(stubs):
-    stubs["prediction"] = prediction("issue_report", "frustrated", p=0.4, emotion_p=0.5)
+    stubs["prediction"] = prediction("issue_report", "frustrated", p=pipeline.INTENT_CONFIDENCE_THRESHOLD - 0.1, emotion_p=0.5)
     state = pipeline.run_turn(pipeline.get_initial_state("u2"), "wifi again")
     assert state["intent_label"] == "uncertain"
     assert state["stage"] != "escalated"
@@ -741,3 +743,17 @@ def test_zero_confidence_prediction_gets_no_tags(stubs):
 def test_classified_message_keeps_tags(stubs):
     state, bot = turn(pipeline.get_initial_state("tg4"), "my VPN keeps dropping")
     assert {"intent", "emotion", "risk"} <= bot[0].keys()
+
+
+def test_repeated_failure_phrase_at_fix_check_takes_ticket_path(stubs):
+    state = to_fix_check(stubs, "rf1")
+    state, bot = turn(state, "no, same problem as before")
+    assert pipeline.keyword_flags("no, same problem as before")["repeated_failure"]
+    assert state["stage"] != "escalated"
+    assert bot[-1]["response"] == REQ_Q and stubs["tickets"] == []
+
+
+def test_repeated_failure_phrase_outside_fix_check_still_escalates(stubs):
+    state = pipeline.run_turn(pipeline.get_initial_state("rf2"), "I followed your guide but I still can’t log in")
+    assert state["stage"] == "escalated"
+    assert state["escalation_trigger"] in ("keyword", "both")

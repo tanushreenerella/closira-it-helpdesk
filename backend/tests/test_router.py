@@ -5,7 +5,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from backend.router import RISK_ESCALATE_THRESHOLD, keyword_flags, risk_score, route
+import pytest
+
+from backend.router import (COMPLAINT_ESCALATE_THRESHOLD, RISK_ESCALATE_THRESHOLD, explicit_escalation, keyword_flags, repeated_failure_check,
+                            risk_score, route)
 
 
 def test_keyword_flags_are_hard_overrides_even_at_zero_risk():
@@ -28,8 +31,10 @@ def test_high_risk_escalates_without_keywords():
 
 
 def test_complaint_has_lower_escalation_bar():
-    assert route("complaint", "frustrated", 0.6, {})[0] == "escalate"
-    assert route("issue_report", "frustrated", 0.6, {})[0] == "faq"
+    between = (COMPLAINT_ESCALATE_THRESHOLD + RISK_ESCALATE_THRESHOLD) / 2
+    assert COMPLAINT_ESCALATE_THRESHOLD < RISK_ESCALATE_THRESHOLD
+    assert route("complaint", "frustrated", between, {})[0] == "escalate"
+    assert route("issue_report", "frustrated", between, {})[0] == "faq"
 
 
 def test_stage_and_qualification_routing():
@@ -44,3 +49,31 @@ def test_risk_score_bounds_and_ordering():
     assert 0.0 <= calm < 0.2
     assert angry > RISK_ESCALATE_THRESHOLD
     assert 0.0 <= angry <= 1.0
+
+
+
+@pytest.mark.parametrize("text", [
+    "Please connect me to a live technician.", "I need a tech agent to unlock it.", "Can someone help me over the phone?",
+    "Could you transfer me to someone who can resolve this?", "Please connect me to staff",
+    "I need a live chat with IT right now.", "Can I speak to an IT specialist?",
+])
+def test_expanded_explicit_human_phrases(text):
+    assert explicit_escalation(text)[0]
+
+
+@pytest.mark.parametrize("text", [
+    "I followed the reset steps, but I still can’t log in.",  # curly apostrophe
+    "It keeps asking for the code.", "I keep getting the same error.", "Nothing works.",
+    "That didn't answer my question.", "The instructions didn’t resolve the issue.",
+])
+def test_expanded_repeated_failure_phrases(text):
+    assert repeated_failure_check(text)[0]
+
+
+@pytest.mark.parametrize("text", [
+    "How do I connect to the office Wi-Fi?", "My VPN keeps dropping every 10 minutes.",
+    "Can you connect me to the VPN?", "I still need help setting up email on my phone.",
+])
+def test_expanded_lists_do_not_fire_on_plain_requests(text):
+    assert not explicit_escalation(text)[0]
+    assert not repeated_failure_check(text)[0]

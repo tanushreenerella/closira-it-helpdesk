@@ -7,43 +7,43 @@
     "repeated_confusion": 154,
     "normal": 154
   },
-  "uncertain_intent_rate": 0.45616883116883117,
-  "intent_confidence_threshold": 0.5,
+  "uncertain_intent_rate": 0.2840909090909091,
+  "intent_confidence_threshold": 0.4,
   "escalation": {
     "keyword_rules": {
-      "precision": 0.9870967741935484,
-      "recall": 0.33116883116883117,
-      "f1": 0.4959481361426256,
-      "accuracy": 0.49512987012987014,
+      "precision": 0.9823529411764705,
+      "recall": 0.7229437229437229,
+      "f1": 0.8329177057356608,
+      "accuracy": 0.7824675324675324,
       "escalate_rate_by_legacy_label": {
-        "explicit_human_request": 0.6038961038961039,
-        "frustrated": 0.37012987012987014,
-        "normal": 0.012987012987012988,
-        "repeated_confusion": 0.01948051948051948
+        "explicit_human_request": 0.961038961038961,
+        "frustrated": 0.44805194805194803,
+        "normal": 0.03896103896103896,
+        "repeated_confusion": 0.7597402597402597
       }
     },
     "model_only": {
-      "precision": 0.9385964912280702,
-      "recall": 0.23160173160173161,
-      "f1": 0.3715277777777778,
-      "accuracy": 0.41233766233766234,
+      "precision": 0.921875,
+      "recall": 0.5108225108225108,
+      "f1": 0.6573816155988857,
+      "accuracy": 0.6006493506493507,
       "escalate_rate_by_legacy_label": {
-        "explicit_human_request": 0.01948051948051948,
-        "frustrated": 0.564935064935065,
-        "normal": 0.045454545454545456,
-        "repeated_confusion": 0.11038961038961038
+        "explicit_human_request": 0.2012987012987013,
+        "frustrated": 0.7662337662337663,
+        "normal": 0.12987012987012986,
+        "repeated_confusion": 0.564935064935065
       }
     },
     "router": {
-      "precision": 0.957345971563981,
-      "recall": 0.43722943722943725,
-      "f1": 0.600297176820208,
-      "accuracy": 0.5633116883116883,
+      "precision": 0.9457547169811321,
+      "recall": 0.8679653679653679,
+      "f1": 0.9051918735891648,
+      "accuracy": 0.8636363636363636,
       "escalate_rate_by_legacy_label": {
-        "explicit_human_request": 0.6103896103896104,
-        "frustrated": 0.5844155844155844,
-        "normal": 0.05844155844155844,
-        "repeated_confusion": 0.11688311688311688
+        "explicit_human_request": 0.961038961038961,
+        "frustrated": 0.7857142857142857,
+        "normal": 0.14935064935064934,
+        "repeated_confusion": 0.8571428571428571
       }
     }
   },
@@ -59,12 +59,12 @@
         "confused": 2
       },
       "intent_distribution": {
-        "uncertain": 67,
-        "issue_report": 54,
-        "action_request": 27,
-        "chit_chat": 2,
-        "complaint": 2,
-        "feedback": 1,
+        "issue_report": 60,
+        "uncertain": 42,
+        "action_request": 41,
+        "complaint": 4,
+        "chit_chat": 3,
+        "feedback": 3,
         "information_request": 1
       },
       "raw_intent_distribution": {
@@ -77,7 +77,7 @@
         "appreciation": 1
       },
       "emotion_consistent_rate": null,
-      "mean_risk": 0.40468766233766235
+      "mean_risk": 0.4339103896103897
     },
     "frustrated": {
       "n": 154,
@@ -90,10 +90,12 @@
         "confused": 6
       },
       "intent_distribution": {
-        "complaint": 75,
-        "uncertain": 52,
-        "issue_report": 26,
-        "appreciation": 1
+        "complaint": 94,
+        "issue_report": 30,
+        "uncertain": 26,
+        "appreciation": 2,
+        "chit_chat": 1,
+        "information_request": 1
       },
       "raw_intent_distribution": {
         "complaint": 107,
@@ -105,7 +107,7 @@
         "feedback": 1
       },
       "emotion_consistent_rate": 0.4025974025974026,
-      "mean_risk": 0.6587954545454545
+      "mean_risk": 0.6893785714285714
     },
     "normal": {
       "n": 154,
@@ -118,13 +120,13 @@
         "angry": 1
       },
       "intent_distribution": {
-        "uncertain": 87,
-        "issue_report": 28,
-        "information_request": 18,
-        "action_request": 9,
-        "complaint": 6,
-        "feedback": 3,
-        "appreciation": 2,
+        "uncertain": 56,
+        "issue_report": 37,
+        "information_request": 24,
+        "action_request": 16,
+        "complaint": 13,
+        "feedback": 4,
+        "appreciation": 3,
         "chit_chat": 1
       },
       "raw_intent_distribution": {
@@ -137,7 +139,7 @@
         "chit_chat": 1
       },
       "emotion_consistent_rate": 0.9155844155844156,
-      "mean_risk": 0.28972857142857145
+      "mean_risk": 0.34283701298701297
     },
     "repeated_confusion": {
       "n": 154,
@@ -149,13 +151,13 @@
         "confused": 5
       },
       "intent_distribution": {
-        "uncertain": 75,
-        "issue_report": 51,
-        "complaint": 11,
-        "feedback": 10,
+        "issue_report": 62,
+        "uncertain": 51,
+        "complaint": 18,
+        "feedback": 11,
+        "appreciation": 6,
         "chit_chat": 3,
         "action_request": 2,
-        "appreciation": 1,
         "information_request": 1
       },
       "raw_intent_distribution": {
@@ -168,30 +170,16 @@
         "information_request": 2
       },
       "emotion_consistent_rate": 0.2727272727272727,
-      "mean_risk": 0.4002233766233766
+      "mean_risk": 0.5639077922077923
     }
   },
   "examples_missed_by_router": [
-    {
-      "text": "Please connect me to staff",
-      "label": "explicit_human_request",
-      "intent": "action_request",
-      "emotion": "angry",
-      "risk": 0.7094
-    },
     {
       "text": "You have not answered my question twice",
       "label": "repeated_confusion",
       "intent": "chit_chat",
       "emotion": "frustrated",
       "risk": 0.5082
-    },
-    {
-      "text": "That did not answer it again",
-      "label": "repeated_confusion",
-      "intent": "chit_chat",
-      "emotion": "frustrated",
-      "risk": 0.6497
     },
     {
       "text": "Why are you repeating yourself?",
@@ -208,46 +196,11 @@
       "risk": 0.5298
     },
     {
-      "text": "Why can\u2019t I log in? I\u2019ve entered my password correctly, but the system says it\u2019s wrong. This is frustrating.",
-      "label": "frustrated",
-      "intent": "issue_report",
-      "emotion": "frustrated",
-      "risk": 0.6964
-    },
-    {
-      "text": "I\u2019ve tried all the suggested steps, still can\u2019t access my account. This delay is ruining my workday.",
-      "label": "frustrated",
-      "intent": "issue_report",
-      "emotion": "frustrated",
-      "risk": 0.6188
-    },
-    {
-      "text": "My account is locked after a single failed login attempt\u2014no warning, no unlock option. This is outrageous!",
-      "label": "frustrated",
-      "intent": "issue_report",
-      "emotion": "sad",
-      "risk": 0.6168
-    },
-    {
       "text": "I can't log into my work account today, and this is killing me\u2014I've been waiting for the reset link forever.",
       "label": "frustrated",
       "intent": "issue_report",
       "emotion": "sad",
       "risk": 0.5406
-    },
-    {
-      "text": "The password reset email keeps bouncing back. I\u2019m frustrated that I can\u2019t get into my account at all.",
-      "label": "frustrated",
-      "intent": "issue_report",
-      "emotion": "sad",
-      "risk": 0.6504
-    },
-    {
-      "text": "Every time I enter my username, it says 'access denied'. I've followed the steps, yet the system refuses me. I'm losing my patience.",
-      "label": "frustrated",
-      "intent": "issue_report",
-      "emotion": "sad",
-      "risk": 0.5722
     },
     {
       "text": "I reset my password twice, but the new login still fails. The helpdesk email keeps bouncing back. This is a major disruption to my work.",
@@ -276,14 +229,93 @@
       "intent": "issue_report",
       "emotion": "confused",
       "risk": 0.5393
+    },
+    {
+      "text": "Every time I try to sign in, it says my password is incorrect. I've checked it multiple times and it works elsewhere.",
+      "label": "frustrated",
+      "intent": "issue_report",
+      "emotion": "neutral",
+      "risk": 0.441
+    },
+    {
+      "text": "My Wi\u2011Fi keeps dropping right before a conference call. I'm losing every minute!",
+      "label": "frustrated",
+      "intent": "uncertain",
+      "emotion": "neutral",
+      "risk": 0.1058
+    },
+    {
+      "text": "Every time I try to access the intranet, it times out. We\u2019re losing productivity.",
+      "label": "frustrated",
+      "intent": "uncertain",
+      "emotion": "neutral",
+      "risk": 0.1725
+    },
+    {
+      "text": "The network is unusable; documents won't sync, and I'm losing hours of work.",
+      "label": "frustrated",
+      "intent": "uncertain",
+      "emotion": "neutral",
+      "risk": 0.3283
+    },
+    {
+      "text": "I\u2019m still connected to the old network, but no one can see my files. Why isn\u2019t it fixed?",
+      "label": "frustrated",
+      "intent": "uncertain",
+      "emotion": "confused",
+      "risk": 0.3974
+    },
+    {
+      "text": "My VPN keeps disconnecting mid\u2011meeting, and it\u2019s driving me crazy. I can\u2019t finish my work!",
+      "label": "frustrated",
+      "intent": "uncertain",
+      "emotion": "frustrated",
+      "risk": 0.4766
+    },
+    {
+      "text": "I\u2019ve rebooted the laptop, cleared the cache, and reinstalled the client, but the VPN still refuses to connect.",
+      "label": "frustrated",
+      "intent": "uncertain",
+      "emotion": "neutral",
+      "risk": 0.1922
     }
   ],
   "examples_false_alarm": [
+    {
+      "text": "I can\u2019t access the VPN because my credentials aren\u2019t accepted.",
+      "intent": "issue_report",
+      "emotion": "frustrated",
+      "risk": 0.5506
+    },
     {
       "text": "My workstation says I\u2019m not an authorized user for the file server.",
       "intent": "uncertain",
       "emotion": "frustrated",
       "risk": 0.75
+    },
+    {
+      "text": "I can\u2019t log into my account after the password reset, the error says credentials are invalid.",
+      "intent": "issue_report",
+      "emotion": "frustrated",
+      "risk": 0.6109
+    },
+    {
+      "text": "I\u2019m getting an authentication error when trying to access the intranet portal.",
+      "intent": "issue_report",
+      "emotion": "frustrated",
+      "risk": 0.6078
+    },
+    {
+      "text": "I\u2019m able to log in on my phone, but my laptop keeps asking for a new password.",
+      "intent": "issue_report",
+      "emotion": "neutral",
+      "risk": 0.5074
+    },
+    {
+      "text": "After the recent security patch, I'm unable to access the shared drive.",
+      "intent": "complaint",
+      "emotion": "neutral",
+      "risk": 0.5355
     },
     {
       "text": "I\u2019m able to connect to the network, but the internet speed is unusually slow during video calls.",
@@ -299,15 +331,21 @@
     },
     {
       "text": "The laptop\u2019s network adapter appears disabled in device manager; it won\u2019t connect to the corporate VPN.",
-      "intent": "uncertain",
+      "intent": "complaint",
       "emotion": "neutral",
-      "risk": 0.3222
+      "risk": 0.6093
     },
     {
       "text": "My wireless connection drops every time I start a video call; the router seems fine on other devices.",
       "intent": "complaint",
       "emotion": "neutral",
       "risk": 0.5597
+    },
+    {
+      "text": "The Wi\u2011Fi network is prompting for credentials repeatedly, even though I\u2019m already logged in.",
+      "intent": "complaint",
+      "emotion": "neutral",
+      "risk": 0.58
     },
     {
       "text": "After a software update, my network adapter stopped detecting any wireless networks.",
@@ -322,16 +360,16 @@
       "risk": 0.6555
     },
     {
-      "text": "The VPN keeps disconnecting after a few minutes of inactivity while I work from home.",
-      "intent": "complaint",
-      "emotion": "neutral",
-      "risk": 0.5822
+      "text": "The new conference room router was installed yesterday, but I can't connect my laptop. The network name appears, but login fails.",
+      "intent": "issue_report",
+      "emotion": "happy",
+      "risk": 0.5944
     },
     {
-      "text": "I accidentally clicked on a phishing link in an email; my account feels compromised.",
-      "intent": "uncertain",
-      "emotion": "neutral",
-      "risk": 0.1096
+      "text": "My VPN disconnects every 10 minutes during my remote work session; I need it to stay stable.",
+      "intent": "action_request",
+      "emotion": "frustrated",
+      "risk": 0.6965
     }
   ]
 }

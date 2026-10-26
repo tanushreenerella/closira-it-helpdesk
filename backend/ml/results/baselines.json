@@ -1,48 +1,48 @@
 {
   "intent": {
-    "test_rows": 4982,
+    "test_rows": 4983,
     "keyword_rules": {
-      "macro_f1": 0.5915856249931133,
-      "accuracy": 0.6025692492974709,
+      "macro_f1": 0.6019228299643997,
+      "accuracy": 0.6086694762191451,
       "per_class_f1": {
-        "information_request": 0.6160830090791181,
-        "issue_report": 0.4222873900293255,
-        "action_request": 0.44173140954495005,
-        "complaint": 0.9483204134366925,
-        "feedback": 0.7908396946564885,
-        "appreciation": 0.8303341902313625,
-        "chit_chat": 0.0915032679738562
+        "information_request": 0.6181342632955537,
+        "issue_report": 0.4501915708812261,
+        "action_request": 0.4582651391162029,
+        "complaint": 0.9734513274336283,
+        "feedback": 0.782608695652174,
+        "appreciation": 0.7926509186351706,
+        "chit_chat": 0.13815789473684212
       },
       "support": {
         "information_request": 1697,
         "issue_report": 755,
         "action_request": 1090,
-        "complaint": 399,
+        "complaint": 400,
         "feedback": 373,
-        "appreciation": 402,
-        "chit_chat": 266
+        "appreciation": 403,
+        "chit_chat": 265
       }
     },
     "tfidf_logreg": {
-      "macro_f1": 0.967127858121302,
-      "accuracy": 0.9608590927338418,
+      "macro_f1": 0.9654691458502468,
+      "accuracy": 0.9612683122616897,
       "per_class_f1": {
-        "information_request": 0.9562890276538805,
-        "issue_report": 0.9444081098757358,
-        "action_request": 0.9526871841984382,
-        "complaint": 0.9850374064837906,
-        "feedback": 0.9853528628495339,
-        "appreciation": 0.9887920298879203,
-        "chit_chat": 0.9573283858998145
+        "information_request": 0.9595238095238096,
+        "issue_report": 0.9441558441558442,
+        "action_request": 0.9545245751033532,
+        "complaint": 0.9887359198998749,
+        "feedback": 0.9786666666666667,
+        "appreciation": 0.9851116625310173,
+        "chit_chat": 0.947565543071161
       },
       "support": {
         "information_request": 1697,
         "issue_report": 755,
         "action_request": 1090,
-        "complaint": 399,
+        "complaint": 400,
         "feedback": 373,
-        "appreciation": 402,
-        "chit_chat": 266
+        "appreciation": 403,
+        "chit_chat": 265
       }
     }
   },
@@ -69,15 +69,15 @@
       }
     },
     "tfidf_logreg": {
-      "macro_f1": 0.5393640072464917,
-      "accuracy": 0.6503251625812907,
+      "macro_f1": 0.5405095398116043,
+      "accuracy": 0.6498249124562281,
       "per_class_f1": {
-        "angry": 0.47029702970297027,
-        "frustrated": 0.36363636363636365,
+        "angry": 0.4688279301745636,
+        "frustrated": 0.3711340206185567,
         "confused": 0.3926940639269406,
-        "sad": 0.578125,
-        "happy": 0.7639221045439016,
-        "neutral": 0.6675094816687737
+        "sad": 0.58203125,
+        "happy": 0.7635990420800547,
+        "neutral": 0.6647709320695103
       },
       "support": {
         "angry": 187,

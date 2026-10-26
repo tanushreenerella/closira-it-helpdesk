@@ -1,0 +1,245 @@
+{
+  "model": "multitask",
+  "target_recall": 0.8,
+  "split": {
+    "calibration": 308,
+    "held_out": 308,
+    "seed": 42,
+    "stratified_by": "legacy label"
+  },
+  "defaults": {
+    "intent_threshold": 0.5,
+    "risk_threshold": 0.75,
+    "complaint_threshold": 0.5
+  },
+  "calibrated": {
+    "intent_threshold": 0.5,
+    "risk_threshold": 0.725,
+    "complaint_threshold": 0.5
+  },
+  "calibration_half": {
+    "defaults": {
+      "precision": 1.0,
+      "recall": 0.8355,
+      "f1": 0.9104,
+      "false_alarm_rate": 0.0,
+      "escalated": 193,
+      "positives": 231,
+      "escalate_rate_by_legacy_label": {
+        "explicit_human_request": 0.987,
+        "frustrated": 0.6883,
+        "normal": 0.0,
+        "repeated_confusion": 0.8312
+      }
+    },
+    "calibrated": {
+      "precision": 1.0,
+      "recall": 0.8398,
+      "f1": 0.9129,
+      "false_alarm_rate": 0.0,
+      "escalated": 194,
+      "positives": 231,
+      "escalate_rate_by_legacy_label": {
+        "explicit_human_request": 0.987,
+        "frustrated": 0.7013,
+        "normal": 0.0,
+        "repeated_confusion": 0.8312
+      }
+    }
+  },
+  "held_out_half": {
+    "defaults": {
+      "precision": 0.9686,
+      "recall": 0.8009,
+      "f1": 0.8768,
+      "false_alarm_rate": 0.0779,
+      "escalated": 191,
+      "positives": 231,
+      "escalate_rate_by_legacy_label": {
+        "explicit_human_request": 0.9351,
+        "frustrated": 0.7532,
+        "normal": 0.0779,
+        "repeated_confusion": 0.7143
+      }
+    },
+    "calibrated": {
+      "precision": 0.9688,
+      "recall": 0.8052,
+      "f1": 0.8794,
+      "false_alarm_rate": 0.0779,
+      "escalated": 192,
+      "positives": 231,
+      "escalate_rate_by_legacy_label": {
+        "explicit_human_request": 0.9351,
+        "frustrated": 0.7532,
+        "normal": 0.0779,
+        "repeated_confusion": 0.7273
+      }
+    }
+  },
+  "target_reached_on_calibration": true,
+  "operating_points": [
+    {
+      "false_alarm_budget": 0.05,
+      "thresholds": {
+        "intent_threshold": 0.4,
+        "risk_threshold": 0.6,
+        "complaint_threshold": 0.5
+      },
+      "calibration_half": {
+        "precision": 0.9854,
+        "recall": 0.8745,
+        "f1": 0.9266,
+        "false_alarm_rate": 0.039,
+        "escalated": 205,
+        "positives": 231,
+        "escalate_rate_by_legacy_label": {
+          "explicit_human_request": 0.987,
+          "frustrated": 0.7922,
+          "normal": 0.039,
+          "repeated_confusion": 0.8442
+        }
+      },
+      "held_out_half": {
+        "precision": 0.9596,
+        "recall": 0.8225,
+        "f1": 0.8858,
+        "false_alarm_rate": 0.1039,
+        "escalated": 198,
+        "positives": 231,
+        "escalate_rate_by_legacy_label": {
+          "explicit_human_request": 0.9351,
+          "frustrated": 0.7922,
+          "normal": 0.1039,
+          "repeated_confusion": 0.7403
+        }
+      }
+    },
+    {
+      "false_alarm_budget": 0.1,
+      "thresholds": {
+        "intent_threshold": 0.4,
+        "risk_threshold": 0.55,
+        "complaint_threshold": 0.5
+      },
+      "calibration_half": {
+        "precision": 0.977,
+        "recall": 0.9177,
+        "f1": 0.9464,
+        "false_alarm_rate": 0.0649,
+        "escalated": 217,
+        "positives": 231,
+        "escalate_rate_by_legacy_label": {
+          "explicit_human_request": 0.987,
+          "frustrated": 0.8961,
+          "normal": 0.0649,
+          "repeated_confusion": 0.8701
+        }
+      },
+      "held_out_half": {
+        "precision": 0.9395,
+        "recall": 0.8745,
+        "f1": 0.9058,
+        "false_alarm_rate": 0.1688,
+        "escalated": 215,
+        "positives": 231,
+        "escalate_rate_by_legacy_label": {
+          "explicit_human_request": 0.9481,
+          "frustrated": 0.8831,
+          "normal": 0.1688,
+          "repeated_confusion": 0.7922
+        }
+      }
+    },
+    {
+      "false_alarm_budget": 0.2,
+      "thresholds": {
+        "intent_threshold": 0.4,
+        "risk_threshold": 0.525,
+        "complaint_threshold": 0.5
+      },
+      "calibration_half": {
+        "precision": 0.9351,
+        "recall": 0.9351,
+        "f1": 0.9351,
+        "false_alarm_rate": 0.1948,
+        "escalated": 231,
+        "positives": 231,
+        "escalate_rate_by_legacy_label": {
+          "explicit_human_request": 0.987,
+          "frustrated": 0.9351,
+          "normal": 0.1948,
+          "repeated_confusion": 0.8831
+        }
+      },
+      "held_out_half": {
+        "precision": 0.9167,
+        "recall": 0.9048,
+        "f1": 0.9107,
+        "false_alarm_rate": 0.2468,
+        "escalated": 228,
+        "positives": 231,
+        "escalate_rate_by_legacy_label": {
+          "explicit_human_request": 0.9481,
+          "frustrated": 0.9091,
+          "normal": 0.2468,
+          "repeated_confusion": 0.8571
+        }
+      }
+    },
+    {
+      "false_alarm_budget": 0.3,
+      "thresholds": {
+        "intent_threshold": 0.4,
+        "risk_threshold": 0.475,
+        "complaint_threshold": 0.5
+      },
+      "calibration_half": {
+        "precision": 0.9073,
+        "recall": 0.974,
+        "f1": 0.9395,
+        "false_alarm_rate": 0.2987,
+        "escalated": 248,
+        "positives": 231,
+        "escalate_rate_by_legacy_label": {
+          "explicit_human_request": 0.987,
+          "frustrated": 0.974,
+          "normal": 0.2987,
+          "repeated_confusion": 0.961
+        }
+      },
+      "held_out_half": {
+        "precision": 0.88,
+        "recall": 0.9524,
+        "f1": 0.9148,
+        "false_alarm_rate": 0.3896,
+        "escalated": 250,
+        "positives": 231,
+        "escalate_rate_by_legacy_label": {
+          "explicit_human_request": 0.9481,
+          "frustrated": 0.961,
+          "normal": 0.3896,
+          "repeated_confusion": 0.9481
+        }
+      }
+    }
+  ],
+  "abcd_val_cross_domain": {
+    "defaults": {
+      "precision": 0.2538,
+      "recall": 0.463,
+      "f1": 0.3279,
+      "false_alarm_rate": 0.0162,
+      "escalated": 197,
+      "positives": 108
+    },
+    "calibrated": {
+      "precision": 0.2326,
+      "recall": 0.463,
+      "f1": 0.3096,
+      "false_alarm_rate": 0.0182,
+      "escalated": 215,
+      "positives": 108
+    }
+  }
+}
