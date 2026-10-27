@@ -1,0 +1,89 @@
+{
+  "tokenizer_parity": 1.0,
+  "padding_invariance_fp32_max_prob_diff": 0.0,
+  "tasks": {
+    "intent": {
+      "rows": 4983,
+      "prediction_agreement": 0.9898,
+      "max_abs_prob_diff": 0.9381,
+      "pytorch": {
+        "accuracy": 0.9767,
+        "macro_f1": 0.9819
+      },
+      "onnx_int8": {
+        "accuracy": 0.9731,
+        "macro_f1": 0.9783
+      }
+    },
+    "emotion": {
+      "rows": 3998,
+      "prediction_agreement": 0.9217,
+      "max_abs_prob_diff": 0.7756,
+      "pytorch": {
+        "accuracy": 0.6626,
+        "macro_f1": 0.5717
+      },
+      "onnx_int8": {
+        "accuracy": 0.6613,
+        "macro_f1": 0.5715
+      }
+    }
+  },
+  "router_held_out": {
+    "multitask": {
+      "precision": 0.9686,
+      "recall": 0.8009,
+      "f1": 0.8768,
+      "false_alarm_rate": 0.0779,
+      "escalated": 191,
+      "positives": 231,
+      "escalate_rate_by_legacy_label": {
+        "explicit_human_request": 0.9351,
+        "frustrated": 0.7532,
+        "normal": 0.0779,
+        "repeated_confusion": 0.7143
+      }
+    },
+    "onnx": {
+      "precision": 0.9688,
+      "recall": 0.8052,
+      "f1": 0.8794,
+      "false_alarm_rate": 0.0779,
+      "escalated": 192,
+      "positives": 231,
+      "escalate_rate_by_legacy_label": {
+        "explicit_human_request": 0.9351,
+        "frustrated": 0.7662,
+        "normal": 0.0779,
+        "repeated_confusion": 0.7143
+      }
+    }
+  },
+  "size_mb": {
+    "pytorch_model_dir": 266.2,
+    "onnx_fp32": 265.6,
+    "onnx_int8": 66.8,
+    "served_onnx_dir_without_fp32": 67.5
+  },
+  "latency_single_message_1_thread": {
+    "pytorch": {
+      "messages": 200,
+      "mean_ms": 112.3,
+      "p50_ms": 100.9,
+      "p95_ms": 178.8
+    },
+    "onnx_int8": {
+      "messages": 200,
+      "mean_ms": 11.1,
+      "p50_ms": 9.1,
+      "p95_ms": 22.4
+    }
+  },
+  "serving_process_memory": {
+    "python_baseline_mb": 31,
+    "after_tfidf_mb": 220,
+    "after_tfidf_and_onnx_mb": 325,
+    "torch_imported": false,
+    "transformers_imported": false
+  }
+}

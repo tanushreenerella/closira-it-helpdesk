@@ -1,0 +1,11 @@
+# Training, evaluation, ONNX export and tests (not needed by the deployed API).
+-r requirements.txt
+torch>=2.2.0
+transformers>=4.40.0
+pandas>=2.0.0
+onnx>=1.16.0
+psutil>=5.9.0
+pytest>=8.0.0
+# legacy/nlp scripts only
+datasets>=2.19.0
+accelerate>=0.29.0
