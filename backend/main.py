@@ -10,11 +10,16 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .pipeline import get_initial_state, restore_flow_state, run_turn
 from .database import create_session, get_session, initialize_database, list_sessions, persist_session
+from .ml.inference import classifier_status, start_background_loading
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     initialize_database()
+    # Model download/load runs in a background thread so the server starts
+    # (and passes health checks) immediately; the pipeline runs degraded until
+    # the TF-IDF fallback, then the ONNX model, is ready.
+    start_background_loading()
     yield
 
 app = FastAPI(title="Closira IT Helpdesk AI", lifespan=lifespan)
@@ -47,7 +52,7 @@ def parse_agent_message(message: dict) -> dict:
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    return {"status": "ok", "classifier": classifier_status()}
 
 
 def last_classification(session: dict) -> dict:

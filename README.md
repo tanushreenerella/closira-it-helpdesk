@@ -45,11 +45,14 @@ set DATABASE_URL=postgresql://closira_user:password@localhost:5432/closira
 From the repository root:
 
 ```bash
-pip install -r backend/requirements.txt
+pip install -r backend/requirements.txt          # serving only (ONNX runtime, no torch)
+# or, for training / evaluation / tests:
+pip install -r backend/requirements-train.txt
 uvicorn backend.main:app --reload --port 8000
 ```
 
-The API health endpoint is `http://localhost:8000/health`; the WebSocket endpoint is `ws://localhost:8000/ws`.
+The API health endpoint is `http://localhost:8000/health` (it also reports which
+classifier is loaded); the WebSocket endpoint is `ws://localhost:8000/ws`.
 The backend creates the required PostgreSQL tables at startup.
 
 ## Run the frontend
@@ -89,9 +92,12 @@ Support requests go through slot filling (optional requester name/ID, category,
 details, error, device/OS, impact), then the SOP self-help steps; a ticket is raised only if those don't fix it
 or the employee asks. Ticket severity = f(peak risk, impact).
 
-The runtime loads `backend/ml/artifacts/multitask/` if present, else the TF-IDF
-baseline in `backend/ml/artifacts/baseline/`, else runs degraded (neutral
-prediction, keyword rules still active).
+The runtime uses the best model present in `backend/ml/artifacts/`: `onnx/` (int8
+ONNX export of the DistilBERT, served with onnxruntime — no torch), else
+`multitask/` (PyTorch), else the TF-IDF baseline in `baseline/`; with none it runs
+degraded (neutral prediction, keyword rules still active). Models load in a
+background thread at startup — see "Deploy" below for downloading them from the
+Hugging Face Hub.
 
 ```bash
 python -m backend.ml.data.build_datasets   # Banking77+CLINC150+SNIPS+TWCS intents, GoEmotions emotions
@@ -99,10 +105,47 @@ python -m backend.ml.data.build_abcd       # ABCD per-turn escalation labels (no
 python -m backend.ml.baselines             # keyword rules + TF-IDF/LogReg
 python -m backend.ml.multitask --fp16      # multi-task DistilBERT (GPU / Colab)
 python -m backend.ml.evaluate_ood          # 616 legacy IT messages, out-of-domain
+python -m backend.ml.export_onnx           # int8 ONNX export + verification vs PyTorch
+python -m backend.ml.upload_hub            # publish ONNX + TF-IDF to the HF Hub (needs HF_TOKEN)
 ```
 
 Raw data is streamed into memory; nothing large is written to disk. Metrics land in
 `backend/ml/results/`; weak-label samples for manual review in `backend/ml/data/review/`.
+
+## Deploy the backend (Render free tier, 512 MB)
+
+The deployed API serves the int8 ONNX model (66.8 MB) with onnxruntime — no torch.
+Measured locally: ~11 ms per message on one CPU thread; ~324 MB resident while
+serving, ~371 MB peak during startup (TF-IDF and ONNX briefly both loaded).
+
+1. Publish the model (once per model version, from a training environment):
+   ```bash
+   python -m backend.ml.export_onnx      # writes backend/ml/artifacts/onnx/ + verification
+   python -m backend.ml.upload_hub       # HF_TOKEN (write) in backend/.env; prints HF_MODEL_REVISION
+   ```
+2. Render web service:
+   - Build command: `pip install -r backend/requirements.txt`
+   - Start command: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+   - Health check path: `/health` (reports `classifier.model` / `classifier.state`)
+3. Environment variables:
+
+   | Variable | Value |
+   |---|---|
+   | `PYTHON_VERSION` | `3.11.0` (the TF-IDF fallback is pickled with scikit-learn 1.9.0 on 3.11) |
+   | `GROQ_API_KEY` | your Groq key |
+   | `DATABASE_URL` | the Render PostgreSQL connection string |
+   | `FRONTEND_URL` | the deployed frontend origin, e.g. `https://closira.vercel.app` (CORS) |
+   | `HF_MODEL_REPO` | `Tanushreenerella/closira-multitask` |
+   | `HF_MODEL_REVISION` | the commit SHA printed by `upload_hub` (pins the model version) |
+   | `HF_TOKEN` | a **read** token — only needed while the Hub repo is private |
+   | `CLOSIRA_ORT_THREADS` | optional, default `1` |
+
+   Leave `CLOSIRA_CLASSIFIER` unset: it pins a model and disables background loading.
+
+At startup the server answers immediately; a background thread downloads the TF-IDF
+fallback (serves within seconds), then the ONNX model, which replaces it. Until the
+first model is loaded the router runs on keyword rules only. Render's disk is
+ephemeral, so the ~80 MB download repeats after each restart or spin-down.
 
 ## Limits
 
