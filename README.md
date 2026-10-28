@@ -135,7 +135,7 @@ serving, ~371 MB peak during startup (TF-IDF and ONNX briefly both loaded).
    | `GROQ_API_KEY` | your Groq key |
    | `DATABASE_URL` | the Render PostgreSQL connection string |
    | `FRONTEND_URL` | the deployed frontend origin, e.g. `https://closira.vercel.app` (CORS) |
-   | `HF_MODEL_REPO` | `tanushreenerella/closira-multitask` |
+   | `HF_MODEL_REPO` | `Tanushreenerella/closira-multitask` |
    | `HF_MODEL_REVISION` | the commit SHA printed by `upload_hub` (pins the model version) |
    | `HF_TOKEN` | a **read** token — only needed while the Hub repo is private |
    | `CLOSIRA_ORT_THREADS` | optional, default `1` |

@@ -116,11 +116,11 @@ def test_download_from_hub_passes_repo_revision_and_token(monkeypatch):
     import huggingface_hub
     calls = []
     monkeypatch.setattr(huggingface_hub, "snapshot_download", lambda **kw: calls.append(kw))
-    monkeypatch.setenv("HF_MODEL_REPO", "tanushreenerella/closira-multitask")
+    monkeypatch.setenv("HF_MODEL_REPO", "Tanushreenerella/closira-multitask")
     monkeypatch.setenv("HF_MODEL_REVISION", "abc123")
     monkeypatch.setenv("HF_TOKEN", "hf_x")
     inference.download_from_hub(["onnx/*"])
-    assert calls == [{"repo_id": "tanushreenerella/closira-multitask", "revision": "abc123", "token": "hf_x",
+    assert calls == [{"repo_id": "Tanushreenerella/closira-multitask", "revision": "abc123", "token": "hf_x",
                       "local_dir": str(inference.ARTIFACTS_DIR), "allow_patterns": ["onnx/*"]}]
 
 

@@ -1,6 +1,6 @@
 """Upload the served model files to the Hugging Face Hub as one commit.
 
-    python -m backend.ml.upload_hub [--repo tanushreenerella/closira-multitask] [--public]
+    python -m backend.ml.upload_hub [--repo Tanushreenerella/closira-multitask] [--public]
 
 Uploads, in the layout backend/ml/inference.py downloads into artifacts/:
     onnx/model.int8.onnx, onnx/tokenizer.json, onnx/labels.json
@@ -59,7 +59,7 @@ def model_card(repo: str) -> str:
 
 def main(argv=None) -> None:
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--repo", default="tanushreenerella/closira-multitask")
+    p.add_argument("--repo", default="Tanushreenerella/closira-multitask")
     p.add_argument("--public", action="store_true", help="create the repo public (default: private)")
     args = p.parse_args(argv)
 
